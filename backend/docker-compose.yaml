@@ -1,9 +1,22 @@
+version: '3.8'
+
 services:
-  db:
+  db: # Seu serviço PostgreSQL existente
     image: postgres:16.2
     volumes:
       - postgres-data:/var/lib/postgresql/data/
     env_file: .env
 
+  qdrant: 
+    image: qdrant/qdrant:latest 
+    container_name: meu_qdrant_compose 
+    ports:
+      - "6333:6333" 
+      - "6334:6334" 
+    volumes:
+      - qdrant_storage_compose:/qdrant/storage 
+
+
 volumes:
-  postgres-data:
+  postgres-data: 
+  qdrant_storage_compose: {} 
