@@ -1,34 +1,62 @@
 import spacy
-import re
-from collections import Counter
+import re # Mantemos re para a função normalizar_texto, caso queira usá-la
+# from collections import Counter # Counter não será mais necessário aqui
 
-# Carrega o modelo de linguagem em português do spaCy
-# Se você não tiver o modelo, instale-o com: python -m spacy download pt_core_news_sm
+# Novas importações
+from qdrant_client import QdrantClient, models
+from sentence_transformers import SentenceTransformer
+
+# --- Configurações do Qdrant e Modelo de Embedding ---
+QDRANT_HOST = "localhost"
+QDRANT_HTTP_PORT = 6333
+QDRANT_GRPC_PORT = 6334
+COLLECTION_NAME = "especialidades_medicas"
+EMBEDDING_MODEL_NAME = 'paraphrase-multilingual-MiniLM-L12-v2' # Mesmo modelo usado para popular
+
+# Carregar o modelo de linguagem em português do spaCy (opcional para esta versão, mas pode ser útil para outras coisas)
 try:
-    nlp = spacy.load("pt_core_news_lg")
+    nlp_spacy = spacy.load("pt_core_news_lg")
+    print("Modelo Spacy 'pt_core_news_lg' carregado.")
 except OSError:
-    print("Modelo 'pt_core_news_lg' não encontrado. "
-          "Por favor, instale-o executando: python -m spacy download pt_core_news_lg")
-    exit()
+    print("Modelo Spacy 'pt_core_news_lg' não encontrado. "
+          "Algumas funcionalidades avançadas de NLP podem não estar disponíveis.")
+    nlp_spacy = None # Define como None se não puder carregar
 
-# Definição de especialidades e palavras-chave associadas
-# Esta lista pode ser expandida e refinada
-ESPECIALISTAS_SINTOMAS = {
-    "Cardiologista": ["coração", "peito", "dor no peito", "palpitação", "pressão alta", "falta de ar", "infarto", "angina", "taquicardia", "arritmia"],
-    "Dermatologista": ["pele", "mancha", "coceira", "acne", "espinha", "cabelo", "queda de cabelo", "unha", "alergia de pele", "micose", "verruga", "psoríase", "dermatite"],
-    "Ortopedista": ["osso", "articulação", "joelho", "coluna", "costas", "dor nas costas", "fratura", "torção", "dor muscular", "tendinite", "ombro", "quadril", "ligamento"],
-    "Gastroenterologista": ["estômago", "azia", "refluxo", "náusea", "vômito", "diarreia", "intestino", "prisão de ventre", "gastrite", "úlcera", "digestão"],
-    "Neurologista": ["cabeça", "dor de cabeça", "tontura", "vertigem", "convulsão", "memória", "formigamento", "dormência", "enxaqueca", "avc", "parkinson", "alzheimer"],
-    "Oftalmologista": ["olho", "visão", "vista", "cegueira", "miopia", "astigmatismo", "hipermetropia", "óculos", "lente de contato", "catarata", "glaucoma", "conjuntivite"],
-    "Otorrinolaringologista": ["ouvido", "dor de ouvido", "nariz", "garganta", "dor de garganta", "sinusite", "rinite", "tontura", "zumbido", "surdez", "rouquidão", "amigdalite"],
-    "Endocrinologista": ["diabetes", "tireoide", "hormônio", "obesidade", "metabolismo", "crescimento", "colesterol"],
-    "Pneumologista": ["pulmão", "respiração", "tosse", "chiado no peito", "asma", "bronquite", "pneumonia"],
-    "Urologista": ["rim", "bexiga", "urina", "próstata", "infecção urinária", "cálculo renal"],
-    "Ginecologista": ["útero", "ovário", "menstruação", "corrimento", "gravidez", "contracepção", "preventivo"],
-    "Clínico Geral": ["geral", "febre", "cansaço", "mal-estar", "gripe", "resfriado", "check-up", "dor no corpo", "exames de rotina"]
-}
+# --- Inicialização do Cliente Qdrant e Modelo SentenceTransformer (fazer uma vez) ---
+try:
+    print(f"Conectando ao Qdrant (gRPC em {QDRANT_HOST}:{QDRANT_GRPC_PORT}, HTTP em {QDRANT_HOST}:{QDRANT_HTTP_PORT})...")
+    qdrant_client = QdrantClient(
+        host=QDRANT_HOST,
+        port=QDRANT_HTTP_PORT,
+        grpc_port=QDRANT_GRPC_PORT,
+        prefer_grpc=True
+    )
+    print("Cliente Qdrant inicializado!")
+    # Testar conexão básica e se a coleção existe
+    qdrant_client.get_collection(collection_name=COLLECTION_NAME)
+    print(f"Conectado com sucesso à coleção '{COLLECTION_NAME}' no Qdrant.")
 
-# Função para normalizar o texto
+except Exception as e:
+    print(f"ERRO: Não foi possível conectar ao Qdrant ou à coleção '{COLLECTION_NAME}'. Verifique se o Qdrant está rodando. Detalhes: {e}")
+    qdrant_client = None # Define como None se não puder conectar
+
+try:
+    if qdrant_client: # Só carrega o modelo de embedding se o Qdrant estiver acessível
+        print(f"Carregando o modelo de embedding '{EMBEDDING_MODEL_NAME}'...")
+        embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+        print("Modelo de embedding carregado.")
+    else:
+        embedding_model = None
+        print("Modelo de embedding não carregado devido a falha na conexão com Qdrant.")
+except Exception as e:
+    print(f"ERRO: Não foi possível carregar o modelo de embedding SentenceTransformer. Detalhes: {e}")
+    embedding_model = None
+
+
+# A Definição de ESPECIALISTAS_SINTOMAS não é mais necessária aqui,
+# pois esses dados já estão no Qdrant.
+
+# Função para normalizar o texto (pode ser útil para pré-processar a entrada do usuário antes do embedding, opcional)
 def normalizar_texto(texto):
     """Converte o texto para minúsculas, remove acentos e caracteres especiais."""
     texto = texto.lower()
@@ -42,53 +70,82 @@ def normalizar_texto(texto):
     texto = texto.strip()
     return texto
 
-# Função para sugerir especialista
-def sugerir_especialista(descricao_sintomas):
-    """
-    Analisa a descrição dos sintomas e sugere um especialista.
-    Retorna uma lista de tuplas (especialista, pontuação) ordenada pela pontuação.
-    """
-    if not descricao_sintomas:
+# Nova Função para sugerir especialista usando Qdrant
+
+def sugerir_especialista_qdrant(descricao_sintomas_usuario, top_k=3):
+    if not qdrant_client or not embedding_model:
+        print("ERRO: Cliente Qdrant ou modelo de embedding não inicializado corretamente.")
+        return []
+    if not descricao_sintomas_usuario:
+        # print("Debug: Descrição de sintomas vazia.") # Pode remover este debug
         return []
 
-    texto_normalizado = normalizar_texto(descricao_sintomas)
-    doc = nlp(texto_normalizado)
+    texto_para_embedding = descricao_sintomas_usuario 
+    # print(f"Debug: Texto para embedding: '{texto_para_embedding}'") # Pode remover este debug
 
-    # Extrai tokens (palavras) relevantes da descrição
-    tokens_usuario = [token.lemma_.lower() for token in doc if not token.is_stop and not token.is_punct and token.is_alpha]
-    
-    # Contagem de palavras-chave por especialista
-    contagem_especialistas = Counter()
+    try:
+        vetor_sintomas_usuario = embedding_model.encode(texto_para_embedding).tolist()
+        # print(f"Debug: Buscando no Qdrant com vetor de {len(vetor_sintomas_usuario)} dimensões.") # Pode remover
 
-    for especialista, palavras_chave in ESPECIALISTAS_SINTOMAS.items():
-        palavras_chave_normalizadas = [normalizar_texto(chave) for chave in palavras_chave]
-        score = 0
-        # Verifica a presença de palavras-chave simples e compostas
-        for chave_norm in palavras_chave_normalizadas:
-            if chave_norm in texto_normalizado: # Verifica se a string da chave está contida
-                score += texto_normalizado.count(chave_norm) # Conta ocorrências da substring
-                # Adiciona mais peso para palavras-chave mais longas (mais específicas)
-                score += len(chave_norm.split()) -1
+        search_results_obj = qdrant_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=vetor_sintomas_usuario,
+            limit=top_k,
+            with_payload=True 
+        )
+        
+        sugestoes = []
+        
+        # Verifica se o objeto de resposta existe e se o atributo 'points' contém algo
+        if search_results_obj and hasattr(search_results_obj, 'points') and search_results_obj.points:
+            actual_hits = search_results_obj.points # <<< CORREÇÃO PRINCIPAL AQUI!
 
+            # print(f"Debug: Foram encontrados {len(actual_hits)} hits.") # Debug opcional
 
-        # Adiciona pontos por tokens individuais que correspondem
-        # (menos preciso que a correspondência de frase/substring, mas útil)
-        # for token_usr in tokens_usuario:
-        #     for palavra_chave_especialista in palavras_chave_normalizadas:
-        #         if token_usr in palavra_chave_especialista.split(): # Se o token faz parte de uma palavra chave
-        #             score += 0.5 # Menor peso para tokens soltos
+            for i, hit in enumerate(actual_hits): # Agora 'hit' deve ser um ScoredPoint
+                # print(f"Debug Loop (iteração {i}): Tipo de hit: {type(hit)}, Conteúdo de hit: {hit}") # Debug opcional
+                
+                nome_especialista = None
+                score = None
 
-        if score > 0:
-            contagem_especialistas[especialista] = score
-            
-    sugestoes_ordenadas = contagem_especialistas.most_common()
+                # Acessando payload e score (hit é um objeto ScoredPoint)
+                if hit.payload: # Verifica se payload não é None
+                    nome_especialista = hit.payload.get("nome_especialista") 
+                
+                score = hit.score # score é um atributo direto do ScoredPoint
+                
+                if nome_especialista and score is not None:                                  
+                    sugestoes.append((nome_especialista, score))       
+                else:
+                    print(f"Debug Loop (iteração {i}): Não foi possível obter nome_especialista ou score do hit: {hit}")
 
-    return sugestoes_ordenadas
+            # print(f"Debug: Encontradas {len(sugestoes)} sugestões válidas no Qdrant.") # Debug opcional
+        else:
+            # print("Debug: Nenhum resultado (search_results_obj.points) retornado pela busca no Qdrant.") # Debug opcional
+            if search_results_obj:
+                 # Se quiser ver o objeto de resposta mesmo quando .points está vazio:
+                 # print(f"Debug: Conteúdo do search_results_obj (caso .points esteja vazio): {str(search_results_obj)[:200]}")
+                 pass
 
-# Função principal do chatbot
+        return sugestoes
+
+    except Exception as e:
+        print(f"Erro ao buscar especialista no Qdrant: {e}")
+        import traceback 
+        traceback.print_exc() 
+        return []
+
+# (O resto do seu script chatbot_especialista() e a chamada if __name__ == "__main__": permanecem os mesmos)
+# Agora, a mensagem do chatbot para o usuário deve mostrar as sugestões!
+
+# Função principal do chatbot (adaptada)
 def chatbot_especialista():
     """Função principal que executa o loop do chatbot."""
-    print("Olá! Sou seu assistente virtual de saúde.")
+    if not qdrant_client or not embedding_model:
+        print("Chatbot não pode iniciar. Cliente Qdrant ou modelo de embedding falhou na inicialização.")
+        return
+
+    print("\nOlá! Sou seu assistente virtual de saúde (versão Qdrant).") # Mensagem atualizada
     print("Posso te ajudar a identificar qual especialista médico você talvez precise consultar.")
     print("Por favor, descreva seus sintomas ou o que você está sentindo.")
     print("Digite 'sair' a qualquer momento para encerrar.")
@@ -104,19 +161,27 @@ def chatbot_especialista():
             print("Chatbot: Por favor, descreva seus sintomas para que eu possa ajudar.")
             continue
 
-        sugestoes = sugerir_especialista(entrada_usuario)
+        # Chama a nova função de sugestão baseada em Qdrant
+        sugestoes = sugerir_especialista_qdrant(entrada_usuario)
 
         if sugestoes:
             print("\nChatbot: Com base na sua descrição, aqui estão algumas sugestões de especialistas:")
             for i, (especialista, pontuacao) in enumerate(sugestoes):
-                if i < 3 : # Mostrar até 3 sugestões principais
-                    print(f"  - {especialista} (Relevância: {pontuacao:.2f})")
+                # O score do Qdrant (similaridade de cosseno) varia, geralmente entre 0 e 1 para vetores normalizados.
+                # Quanto maior, mais similar.
+                print(f"  - {especialista} (Similaridade: {pontuacao:.2f})")
             
-            if not any(esp == "Clínico Geral" for esp, _ in sugestoes[:3]) and len(sugestoes) > 0 :
-                 print("  - Clínico Geral (para uma avaliação inicial mais ampla)")
+            # Lógica para sugerir Clínico Geral pode ser mantida se desejado,
+            # ou você pode adicionar "Clínico Geral" aos dados no Qdrant com palavras-chave genéricas.
+            # Se "Clínico Geral" já está no Qdrant, ele pode aparecer naturalmente nas sugestões.
+            # Verificando se o Clínico Geral já foi sugerido para evitar redundância:
+            ja_sugeriu_clinico = any(esp.lower() == "clínico geral" for esp, _ in sugestoes)
+            if not ja_sugeriu_clinico:
+                 # Se quiser sempre adicionar como uma opção:
+                 print("  - Clínico Geral (para uma avaliação inicial mais ampla, se as sugestões acima não parecerem adequadas)")
+
 
             print("\nLembre-se: esta é apenas uma sugestão e não substitui uma consulta médica.")
-            print("Um Clínico Geral também é uma boa opção para uma primeira avaliação.")
         else:
             print("Chatbot: Não consegui identificar um especialista específico com base na sua descrição.")
             print("Tente descrever seus sintomas com mais detalhes ou considere procurar um Clínico Geral para uma avaliação inicial.")
@@ -126,4 +191,8 @@ def chatbot_especialista():
 
 
 if __name__ == "__main__":
-    chatbot_especialista()
+    # Verifica se os componentes essenciais foram carregados antes de iniciar o chatbot
+    if qdrant_client and embedding_model:
+        chatbot_especialista()
+    else:
+        print("Finalizando devido a erro na inicialização dos componentes necessários (Qdrant/Modelo de Embedding).")
