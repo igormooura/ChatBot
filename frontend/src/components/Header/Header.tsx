@@ -6,7 +6,7 @@ const Header = () => {
   const handleClick = () => setNav(!nav);
 
   return (
-    <header className="w-full px-8 py-9 bg-transparent flex items-center justify-between relative">
+    <header className="w-full  px-8 py-9 bg-blue-50 flex items-center justify-between relative">
       <div className="text-2xl font-bold text-[#0B2D6B] z-10">
         NomeLogo
       </div>
