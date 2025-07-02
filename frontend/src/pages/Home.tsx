@@ -4,12 +4,13 @@ import HeroSection from "../components/HeroSection/HeroSection";
 
 const Home = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
       <Header />
-      <HeroSection />
-      <div className="flex-grow" />
+      
+        <HeroSection />
+      
       <Footer />
-    </div>
+    </>
   );
 };
 
