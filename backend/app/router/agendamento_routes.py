@@ -1,11 +1,10 @@
 
-
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 
 from ..services.gemini_service import gerar_explicacao_com_gemini, analisar_pedido_com_gemini
 from ..services.qdrant_service import sugerir_especialistas_qdrant
-from ..models.agenda_model import filtrar_agenda_disponivel, registrar_consulta_model
+from ..services.agendamento_service import buscar_horarios_disponiveis_db, confirmar_agendamento_db
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -19,26 +18,22 @@ def handle_sugestao():
     sugestoes_qdrant = sugerir_especialistas_qdrant(sintomas)
 
     if not sugestoes_qdrant:
-        return jsonify({"mensagem": "Não foi possível encontrar um especialista com base nos sintomas fornecidos."})
+        return jsonify({"mensagem": "Não foi possível encontrar um especialista com base nos sintomas fornecidos."}), 400
 
-    explicacao_gemini = gerar_explicacao_com_gemini(sintomas, sugestoes_qdrant)
+    primeiro_especialista = sugestoes_qdrant[0][0] if sugestoes_qdrant else None
     
     horarios_disponiveis = []
-    for esp_tupla in sugestoes_qdrant:
-        nome_esp = esp_tupla[0] 
-        info_pedido = {"especialista": nome_esp}
-        horarios_filtrados = filtrar_agenda_disponivel(info_pedido)
-        for horario in horarios_filtrados:
-             horarios_disponiveis.append({
-                "especialista": nome_esp.capitalize(),
-                "horario": horario
-            })
-    horarios_disponiveis.sort(key=lambda x: x['horario'])
+    if primeiro_especialista:
+        info_pedido = {"especialista": primeiro_especialista}
+        horarios_disponiveis = buscar_horarios_disponiveis_db(info_pedido)
+
+    explicacao_gemini = gerar_explicacao_com_gemini(sintomas, sugestoes_qdrant)
 
     return jsonify({
         "explicacao": explicacao_gemini,
-        "horarios_sugeridos": horarios_disponiveis[:5]
+        "horarios_sugeridos": horarios_disponiveis[:5] 
     })
+
 
 @bp.route('/buscar-horarios', methods=['POST'])
 def handle_busca_direta():
@@ -52,27 +47,34 @@ def handle_busca_direta():
     if not info_extraida or not info_extraida.get('especialista'):
         return jsonify({"erro": "Não foi possível entender o seu pedido. Tente ser mais específico."}), 400
     
-    horarios_filtrados = filtrar_agenda_disponivel(info_extraida)
+    horarios_filtrados = buscar_horarios_disponiveis_db(info_extraida)
 
     return jsonify({
         "pedido_entendido": info_extraida,
         "horarios_encontrados": horarios_filtrados
     })
 
+
 @bp.route('/confirmar-agendamento', methods=['POST'])
 def handle_confirmacao():
     data = request.get_json()
-    nome = data.get('nome_paciente')
-    especialista = data.get('especialista')
+    nome_paciente = data.get('nome_paciente')
+    medico_id = data.get('medico_id') 
     horario = data.get('horario')
 
-    if not all([nome, especialista, horario]):
-        return jsonify({"erro": "Os campos 'nome_paciente', 'especialista' e 'horario' são obrigatórios."}), 400
+    if not all([nome_paciente, medico_id, horario]):
+        return jsonify({"erro": "Os campos 'nome_paciente', 'medico_id' e 'horario' são obrigatórios."}), 400
     
-    sucesso = registrar_consulta_model(nome, especialista, horario)
+    agendamento_confirmado = confirmar_agendamento_db(nome_paciente, medico_id, horario)
 
-    if sucesso:
-        dt_obj = datetime.strptime(horario, "%Y-%m-%d %H:%M")
-        return jsonify({"mensagem": f"Consulta confirmada para {nome} com {especialista.capitalize()} em {dt_obj.strftime('%d/%m/%Y às %H:%M')}!"})
+    if agendamento_confirmado:
+        nome_medico = agendamento_confirmado.doctor.name
+        especialidade_medico = agendamento_confirmado.doctor.specialty
+        dt_obj = agendamento_confirmado.date
+        
+        mensagem = (f"Consulta confirmada para {nome_paciente} com Dr(a). {nome_medico} "
+                    f"({especialidade_medico.capitalize()}) em {dt_obj.strftime('%d/%m/%Y às %H:%M')}!")
+        
+        return jsonify({"mensagem": mensagem})
     else:
         return jsonify({"erro": "O horário selecionado não está mais disponível ou é inválido."}), 409
