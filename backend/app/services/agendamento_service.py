@@ -1,4 +1,3 @@
-# backend/app/services/agendamento_service.py
 
 from datetime import datetime, time
 from sqlalchemy import and_

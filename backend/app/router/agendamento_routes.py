@@ -2,8 +2,9 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 
-from ..services.gemini_service import gerar_explicacao_com_gemini, analisar_pedido_com_gemini
+from ..services.gemini_service import gerar_explicacao_detalhada_com_gemini, analisar_pedido_com_gemini, formatar_horarios_com_gemini
 from ..services.qdrant_service import sugerir_especialistas_qdrant
+
 from ..services.agendamento_service import buscar_horarios_disponiveis_db, confirmar_agendamento_db
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -15,23 +16,25 @@ def handle_sugestao():
         return jsonify({"erro": "O campo 'sintomas' é obrigatório."}), 400
 
     sintomas = data['sintomas']
-    sugestoes_qdrant = sugerir_especialistas_qdrant(sintomas)
+    
+    sugestoes_qdrant = sugerir_especialistas_qdrant(sintomas, top_k=3)
 
     if not sugestoes_qdrant:
-        return jsonify({"mensagem": "Não foi possível encontrar um especialista com base nos sintomas fornecidos."}), 400
+        return jsonify({"mensagem": "Não foi possível encontrar um especialista com base nos sintomas fornecidos."}), 404
 
-    primeiro_especialista = sugestoes_qdrant[0][0] if sugestoes_qdrant else None
-    
-    horarios_disponiveis = []
-    if primeiro_especialista:
-        info_pedido = {"especialista": primeiro_especialista}
-        horarios_disponiveis = buscar_horarios_disponiveis_db(info_pedido)
+    explicacao_detalhada = gerar_explicacao_detalhada_com_gemini(sintomas, sugestoes_qdrant)
 
-    explicacao_gemini = gerar_explicacao_com_gemini(sintomas, sugestoes_qdrant)
+    if not explicacao_detalhada:
+        nomes_especialistas = [esp for esp, score in sugestoes_qdrant]
+        return jsonify({
+            "mensagem": "Com base nos seus sintomas, sugerimos que você procure um dos seguintes especialistas. Lembre-se que esta é apenas uma sugestão e não substitui uma avaliação médica.",
+            "especialistas_sugeridos": nomes_especialistas
+        })
+
 
     return jsonify({
-        "explicacao": explicacao_gemini,
-        "horarios_sugeridos": horarios_disponiveis[:5] 
+        "explicacao_detalhada": explicacao_detalhada,
+        "especialistas_sugeridos": [esp for esp, score in sugestoes_qdrant]
     })
 
 
@@ -42,18 +45,20 @@ def handle_busca_direta():
         return jsonify({"erro": "O campo 'pedido' é obrigatório."}), 400
 
     pedido = data['pedido']
+
     info_extraida = analisar_pedido_com_gemini(pedido)
 
     if not info_extraida or not info_extraida.get('especialista'):
         return jsonify({"erro": "Não foi possível entender o seu pedido. Tente ser mais específico."}), 400
-    
+
     horarios_filtrados = buscar_horarios_disponiveis_db(info_extraida)
 
-    return jsonify({
-        "pedido_entendido": info_extraida,
-        "horarios_encontrados": horarios_filtrados
-    })
+    resposta_formatada = formatar_horarios_com_gemini(info_extraida, horarios_filtrados)
 
+    return jsonify({
+        "resposta_amigavel": resposta_formatada,
+        "dados_horarios": horarios_filtrados
+    })
 
 @bp.route('/confirmar-agendamento', methods=['POST'])
 def handle_confirmacao():

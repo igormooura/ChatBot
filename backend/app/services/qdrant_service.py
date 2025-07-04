@@ -1,4 +1,3 @@
-# backend/services/qdrant_service.py
 
 from config import (
     qdrant_client, embedding_model, qdrant_ready, COLLECTION_NAME
