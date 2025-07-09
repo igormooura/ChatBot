@@ -24,6 +24,14 @@ def create_app():
     DATABASE_URI = f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
     db.init_app(app)
+    
+    # Uploads
+    app.config['UPLOAD_FOLDER'] = 'uploads'
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+    from .router.upload_pdf import bp as upload_blueprint
+    app.register_blueprint(upload_blueprint)
 
     from . import models
 

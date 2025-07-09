@@ -33,6 +33,16 @@ Inicie o docker
 docker compose up -d
 ```
 
+Insira os dados na Qdrant
+```
+python inserir_na_qdrant.py
+```
+
+Depois rode
+```
+python seed_database.py
+```
+
 Para rodar a API
 ```
 python run.py

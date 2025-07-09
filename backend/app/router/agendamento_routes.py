@@ -6,7 +6,7 @@ from ..services.gemini_service import gerar_explicacao_com_gemini, analisar_pedi
 from ..services.qdrant_service import sugerir_especialistas_qdrant
 from ..services.agendamento_service import buscar_horarios_disponiveis_db, confirmar_agendamento_db
 
-bp = Blueprint('api', __name__, url_prefix='/api')
+bp = Blueprint('api', __name__, url_prefix='/api/agendamento')
 
 @bp.route('/sugerir-especialista', methods=['POST'])
 def handle_sugestao():
