@@ -1,5 +1,3 @@
-backend/seed_database.py# backend/seed_database.py
-
 from app import create_app, db
 from app.models import Doctor, Availability
 from datetime import datetime, timedelta
@@ -26,6 +24,7 @@ DADOS_EXEMPLO = {
 def popular_banco():
     app = create_app()
     with app.app_context():
+        db.create_all()
         print("Limpando tabelas Doctor e Availability...")
         db.session.query(Availability).delete()
         db.session.query(Doctor).delete()
