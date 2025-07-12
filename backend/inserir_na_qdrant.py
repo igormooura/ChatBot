@@ -1,5 +1,5 @@
-from qdrant_client import QdrantClient, models
-from sentence_transformers import SentenceTransformer
+from qdrant_client import QdrantClient, models 
+from sentence_transformers import SentenceTransformer 
 
 # --- Configurações ---
 QDRANT_HOST = "localhost"

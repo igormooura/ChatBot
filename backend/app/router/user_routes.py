@@ -1,6 +1,6 @@
 # backend/app/router/user_routes.py
 from flask import Blueprint, request, jsonify
-from ..services.user_service import register_user, authenticate_user
+from ..services.User_Service import register_user, authenticate_user
 
 bp = Blueprint('user_api', __name__, url_prefix='/user')
 

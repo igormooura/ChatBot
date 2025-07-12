@@ -43,7 +43,9 @@ def create_app():
     # Importa o blueprint da subpasta /app/router/
     from .router.agendamento_routes import bp as agendamento_blueprint
     app.register_blueprint(agendamento_blueprint)
-
+    from .router.user_routes import bp as user_blueprint
+    app.register_blueprint(user_blueprint)
+    
     @app.route('/health')
     def health_check():
         return "Servidor backend do chatbot está no ar!"
