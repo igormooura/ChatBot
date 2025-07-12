@@ -1,9 +1,9 @@
-# backend/services/gemini_service.py
-
 import json
 from datetime import datetime
 from config import gemini_model, gemini_ready
 from ..utils.normalizacao import normalizar_texto_geral
+import json
+from ..models.exames_model import EXAMES_DISPONIVEIS_CLINICA
 
 def gerar_explicacao_com_gemini(sintomas, sugestoes):
     if not gemini_ready:
@@ -64,3 +64,56 @@ def analisar_pedido_com_gemini(texto_usuario):
     except Exception as e:
         print(f"ERRO ao analisar pedido com Gemini: {e}")
         return None
+    
+def identificar_exames_com_gemini(texto_pdf):
+    """
+    Usa a LLM para analisar o texto de uma guia de exame e identificar
+    quais exames da lista da clínica estão sendo solicitados.
+    
+    Args:
+        texto_pdf (str): O texto completo extraído da guia de exame em PDF.
+
+    Returns:
+        dict: Um dicionário contendo a lista de exames encontrados ou um erro.
+    """
+    if not gemini_ready:
+        print("ERRO: Serviço do Gemini não está pronto.")
+        return {"erro": "Serviço de IA indisponível."}
+
+    lista_formatada = "\n".join([f"- {exame}" for exame in EXAMES_DISPONIVEIS_CLINICA])
+
+    prompt = f"""
+    Você é um assistente administrativo de uma clínica. Sua tarefa é analisar o texto de uma guia de exames enviada por um paciente e identificar quais exames solicitados correspondem à lista de exames que a clínica oferece.
+
+    **Instruções:**
+    1. Leia o "Texto da Guia de Exame" abaixo.
+    2. Compare os exames mencionados no texto com a "Lista de Exames da Clínica".
+    3. Retorne APENAS um objeto JSON contendo uma única chave chamada "exames_encontrados", que deve ser uma lista de strings.
+    4. A lista de strings deve conter APENAS os nomes dos exames da "Lista de Exames da Clínica" que foram encontrados no texto.
+    5. Se nenhum exame correspondente for encontrado, retorne uma lista vazia. Não inclua exames que não estão na lista da clínica.
+
+    **Lista de Exames da Clínica:**
+    {lista_formatada}
+
+    **Texto da Guia de Exame:**
+    ---
+    {texto_pdf}
+    ---
+
+    **JSON de Resposta:**
+    """
+
+    try:
+        response = gemini_model.generate_content(prompt)
+        json_text = response.text.strip().replace("```json", "").replace("```", "")
+        resultado = json.loads(json_text)
+
+        if isinstance(resultado, dict) and "exames_encontrados" in resultado and isinstance(resultado["exames_encontrados"], list):
+             return resultado
+        else:
+            print("ERRO: A resposta da LLM não está no formato JSON esperado.")
+            return {"erro": "Não foi possível processar a resposta da IA."}
+
+    except Exception as e:
+        print(f"ERRO ao chamar a API do Gemini para identificar exames: {e}")
+        return {"erro": f"Ocorreu um erro na comunicação com a IA: {e}"}
