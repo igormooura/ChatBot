@@ -45,6 +45,8 @@ def create_app():
     app.register_blueprint(agendamento_blueprint)
     from .router.user_routes import bp as user_blueprint
     app.register_blueprint(user_blueprint)
+    from .router.paciente_routes import bp as paciente_blueprint
+    app.register_blueprint(paciente_blueprint)
     
     @app.route('/health')
     def health_check():
