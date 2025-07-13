@@ -14,13 +14,15 @@ const Header = () => {
         <Link to="/" className="text-[#0B2D6B] font-medium">
           Inicio
         </Link>
+         {/* depois pra vai pra /user */}
         <Link to="/login" onClick={() => setNav(false)} className="text-[#0B2D6B] font-medium">
           Consultas
         </Link>
         <Link to="/chatbot" className="text-[#0B2D6B] font-medium">
           Chatbot
         </Link>
-        <Link to="/admin" className="text-[#0B2D6B] font-medium">
+        {/* depois pra vai pra /admin */}
+        <Link to="/login" className="text-[#0B2D6B] font-medium"> 
           Admin
         </Link>
       </nav>
