@@ -1,16 +1,16 @@
-import Footer from "../components/Footer/Footer";
+// src/pages/Home.tsx
 import Header from "../components/Header/Header";
 import HeroSection from "../components/HeroSection/HeroSection";
+import Footer from "../components/Footer/Footer";
+import Background from "../components/Background/Background";
 
 const Home = () => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <Background>
       <Header />
-      <main className="flex-grow">
-        <HeroSection />
-      </main>
+      <HeroSection />
       <Footer />
-    </div>
+    </Background>
   );
 };
 
