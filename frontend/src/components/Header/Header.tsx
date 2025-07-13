@@ -14,7 +14,7 @@ const Header = () => {
         <Link to="/" className="text-[#0B2D6B] font-medium">
           Inicio
         </Link>
-        <Link to="/user" onClick={() => setNav(false)} className="text-[#0B2D6B] font-medium">
+        <Link to="/login" onClick={() => setNav(false)} className="text-[#0B2D6B] font-medium">
           Consultas
         </Link>
         <Link to="/chatbot" className="text-[#0B2D6B] font-medium">
