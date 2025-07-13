@@ -2,7 +2,7 @@ from . import db
 from sqlalchemy.orm import relationship
 
 
-class Availability(db.Model):
+class DoctorAvailability(db.Model):
     __tablename__ = 'availabilities'
 
     id = db.Column(db.Integer, primary_key=True)

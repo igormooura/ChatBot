@@ -24,6 +24,7 @@ DADOS_EXEMPLO = {
 def popular_banco():
     app = create_app()
     with app.app_context():
+        db.drop_all()
         db.create_all()
         print("Limpando tabelas Doctor e Availability...")
         db.session.query(Availability).delete()
