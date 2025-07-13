@@ -12,6 +12,7 @@ class Patient(db.Model):
     
     # Isto define o outro lado da relação para agendamentos e logs de chat
     appointments = relationship('Appointment', back_populates='patient')
+    scheduled_exams = relationship('ScheduledExam', back_populates='patient')
 
     def __repr__(self):
         return f'<Patient {self.id}: {self.name}>'

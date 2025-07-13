@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import Doctor, Availability
+from app.models import Doctor, DoctorAvailability
 from datetime import datetime, timedelta
 
 DADOS_EXEMPLO = {
@@ -26,8 +26,8 @@ def popular_banco():
     with app.app_context():
         db.drop_all()
         db.create_all()
-        print("Limpando tabelas Doctor e Availability...")
-        db.session.query(Availability).delete()
+        print("Limpando tabelas Doctor e DoctorAvailability...")
+        db.session.query(DoctorAvailability).delete()
         db.session.query(Doctor).delete()
         db.session.commit()
         print("Tabelas limpas.")
@@ -40,7 +40,7 @@ def popular_banco():
 
             for horario_str in dados["horarios"]:
                 horario_dt = datetime.strptime(horario_str, "%Y-%m-%d %H:%M")
-                nova_disponibilidade = Availability(doctor_id=novo_medico.id, date=horario_dt)
+                nova_disponibilidade = DoctorAvailability(doctor_id=novo_medico.id, date=horario_dt)
                 db.session.add(nova_disponibilidade)
             
             print(f"  - Médico '{dados['nome']}' e suas disponibilidades foram adicionados.")
