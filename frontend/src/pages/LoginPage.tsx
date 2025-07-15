@@ -48,8 +48,8 @@ const LoginPage = () => {
 
   return (
     <>
-      <Header />
       <Background>
+        <Header />
         <div className="flex justify-center items-center min-h-screen">
           <Box>
             {step === "email" && (
