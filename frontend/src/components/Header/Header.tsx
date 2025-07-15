@@ -43,7 +43,14 @@ const Header = () => {
         </div>
       </header>
 
-    
+      {/* Overlay e Menu Mobile */}
+      {navOpen && (
+        <div
+          onClick={closeNav}
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 md:hidden"
+          style={{ opacity: navOpen ? 1 : 0 }}
+        />
+      )}
 
       <div
         className={`fixed top-0 left-0 w-[45%] h-full bg-white shadow-xl z-50 transition-all duration-300 ease-in-out transform ${
