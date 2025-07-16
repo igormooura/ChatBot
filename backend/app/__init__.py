@@ -43,12 +43,10 @@ def create_app():
     # Importa o blueprint da subpasta /app/router/
     from .router.agendamento_routes import bp as agendamento_blueprint
     app.register_blueprint(agendamento_blueprint)
-    from .router.user_routes import bp as user_blueprint
-    app.register_blueprint(user_blueprint)
-    from .router.paciente_routes import bp as paciente_blueprint
-    app.register_blueprint(paciente_blueprint)
     from .router.exame_routes import bp as exame_blueprint
     app.register_blueprint(exame_blueprint)
+    from .router.auth_routes import bp as auth_blueprint
+    app.register_blueprint(auth_blueprint)
     
     @app.route('/health')
     def health_check():
