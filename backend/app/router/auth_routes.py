@@ -1,6 +1,7 @@
 # backend/app/router/auth_routes.py
 from flask import Blueprint, request, jsonify
 from ..services.auth_service import create_patient, request_login_token, verify_login_token
+from ..utils.decorators import token_required
 
 bp = Blueprint('auth_api', __name__, url_prefix='/')
 
@@ -37,16 +38,25 @@ def handle_verify_token():
     if 'token' not in data:
         return jsonify({"erro": "O campo 'token' é obrigatório."}), 400
 
-    patient, message = verify_login_token(data['token'])
-    if not patient:
-        return jsonify({"erro": message}), 401 
+    jwt_token, message = verify_login_token(data['token'])
+    if not jwt_token:
+        return jsonify({"erro": message}), 401
 
+    return jsonify({ "mensagem": message, "jwt_token": jwt_token }) # Retorna o JWT
+
+@bp.route('/meu-perfil', methods=['GET'])
+@token_required
+def get_my_profile(current_user):
+    """
+    Rota protegida que só pode ser acedida com um JWT válido.
+    O decorator @token_required injeta o 'current_user' na função.
+    """
+    if not current_user:
+        return jsonify({"erro": "Utilizador não encontrado."}), 404
 
     return jsonify({
-        "mensagem": message,
-        "patient": {
-            "id": patient.id,
-            "name": patient.name,
-            "email": patient.email
-        }
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "cpf": current_user.cpf
     })

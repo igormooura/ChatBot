@@ -23,6 +23,8 @@ def create_app():
 
     DATABASE_URI = f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     
     # Uploads
