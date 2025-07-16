@@ -22,13 +22,13 @@ const Header = () => {
             <Link to="/" onClick={closeNav} className="hover:text-blue-700 hover:underline">
               Inicio
             </Link>
-            <Link to="/user" onClick={closeNav} className="hover:text-blue-700 hover:underline">
+            <Link to="/login" onClick={closeNav} className="hover:text-blue-700 hover:underline">
               Consultas
             </Link>
             <Link to="/chatbot" onClick={closeNav} className="hover:text-blue-700 hover:underline">
               Chatbot
             </Link>
-            <Link to="/admin" onClick={closeNav} className="hover:text-blue-700 hover:underline">
+            <Link to="/login" onClick={closeNav} className="hover:text-blue-700 hover:underline">
               Admin
             </Link>
           </nav>
@@ -71,7 +71,7 @@ const Header = () => {
             </Link>
           </li>
           <li>
-            <Link to="/user" onClick={closeNav} className="text-blue-900 font-medium text-lg">
+            <Link to="/login" onClick={closeNav} className="text-blue-900 font-medium text-lg">
               Consultas
             </Link>
           </li>
@@ -81,7 +81,7 @@ const Header = () => {
             </Link>
           </li>
           <li>
-            <Link to="/admin" onClick={closeNav} className="text-blue-900 font-medium text-lg">
+            <Link to="/login" onClick={closeNav} className="text-blue-900 font-medium text-lg">
               Admin
             </Link>
           </li>
