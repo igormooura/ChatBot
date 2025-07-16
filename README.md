@@ -20,6 +20,8 @@ DB_USER=<youruser>
 DB_NAME=<yourdb>
 DB_PASSWORD=<yoursecurepassword>
 DB_HOST=localhost
+
+SECRET_KEY=teste # SECRET KEY PARA JWT
 ```
 
 
