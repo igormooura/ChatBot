@@ -2,24 +2,22 @@ const Footer = () => {
   const nomes = ['Arthur Andrade', 'Igor Moura', 'Hugo Souza', 'Henrico Costa', 'Erick Saraiva'];
 
   return (
-    <footer className="w-full bg-blue-50 py-16 text-gray-800">
-      <div className="max-w-5xl mx-auto px-6">
-        <h2 className="text-3xl font-bold mb-10 text-center tracking-tight text-gray-900">
-          Members
-        </h2>
-        <ul className="flex flex-wrap justify-center gap-6">
+    <footer className="w-full bg-blue-200 py-12 text-gray-800 h-full">
+      <div className=" mx-auto px-6 flex flex-col items-center">
+        <h2 className="text-3xl font-semibold text-gray-900 mb-6">Members</h2>
+
+        <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-8">
           {nomes.map((nome, index) => (
             <li
               key={index}
-              className="text-gray-700 text-lg hover:text-gray-900 transition duration-300"
+              className="text-gray-700 text-base hover:text-gray-900 transition duration-200"
             >
               {nome}
             </li>
           ))}
         </ul>
-        <div className="mt-10 text-center text-gray-500 text-sm">
-          <p>Todos os direitos reservados.</p>
-        </div>
+
+        <p className="text-sm text-gray-600">Todos os direitos reservados.</p>
       </div>
     </footer>
   );
