@@ -1,24 +1,20 @@
-# backend/app/router/exame_routes.py
-
 from flask import Blueprint, request, jsonify
-from ..services.exame_service import find_and_schedule_sequential_exams
+from datetime import datetime, timedelta
 
-# Cria um novo Blueprint para as rotas de exame
+from ..services.exame_service import (
+    find_and_schedule_optimized_exams, 
+    schedule_exams_at_specific_time
+)
+
 bp = Blueprint('exames', __name__, url_prefix='/exames')
 
-@bp.route('/agendar-sequencial', methods=['POST'])
-def handle_agendamento_exames():
+@bp.route('/sugerir-e-agendar', methods=['POST'])
+def handle_sugestao_exames():
     """
-    Endpoint para agendar uma sequência de exames para um paciente.
-    Espera um JSON com:
-    {
-        "patient_id": 10,
-        "exam_names": ["Hemograma Completo", "Raio-X do Tórax"]
-    }
+    Exemplo: {"patient_id": 10, "exam_names": ["Exame A", "Exame B"]}
     """
     data = request.get_json()
-    if not data:
-        return jsonify({"erro": "Requisição JSON inválida."}), 400
+    if not data: return jsonify({"erro": "Requisição JSON inválida."}), 400
 
     patient_id = data.get('patient_id')
     exam_names = data.get('exam_names')
@@ -27,26 +23,81 @@ def handle_agendamento_exames():
         return jsonify({"erro": "patient_id e uma lista de exam_names são obrigatórios."}), 400
 
     try:
-        horarios_agendados = find_and_schedule_sequential_exams(patient_id, exam_names)
+        resultado = find_and_schedule_optimized_exams(patient_id, exam_names)
+        if resultado:
 
-        if horarios_agendados:
-            agendamentos_formatados = [
-                {"exame": name, "horario": dt.isoformat()}
-                for name, dt in zip(exam_names, horarios_agendados)
-            ]
+            agendamentos_detalhados = []
+            start_time = datetime.fromisoformat(resultado['start_time'])
+            current_time = start_time
+            EXAM_DURATION = timedelta(minutes=30) 
+
+            for exam_name in resultado['scheduled_order']:
+                agendamentos_detalhados.append({
+                    "exame": exam_name,
+                    "horario": current_time.isoformat()
+                })
+                current_time += EXAM_DURATION
+
             return jsonify({
-                "mensagem": "Exames agendados com sucesso!",
-                "agendamentos": agendamentos_formatados
-            }), 201 # 201 Created é o status ideal para sucesso
+                "mensagem": "Exames agendados com sucesso na primeira oportunidade encontrada!",
+                "agendamentos": agendamentos_detalhados
+            }), 201
         else:
             return jsonify({
-                "erro": "Não foi possível encontrar um bloco de horário disponível para a sequência de exames solicitada."
-            }), 409 # 409 Conflict indica que a requisição é válida mas não pode ser completada
+                "erro": "Não foi possível encontrar um bloco de horário disponível, mesmo otimizando a ordem."
+            }), 409
             
     except ValueError as ve:
-        # Erro caso um nome de exame não seja encontrado no DB
         return jsonify({"erro": str(ve)}), 404
     except Exception as e:
-        # Erro genérico para problemas inesperados (ex: falha no DB)
+        print(f"ERRO INESPERADO NA ROTA: {e}")
+        return jsonify({"erro": "Ocorreu um erro interno no servidor."}), 500
+
+@bp.route('/agendar-em-horario-especifico', methods=['POST'])
+def handle_agendamento_especifico():
+    """
+    Exemplo: {
+        "patient_id": 10,
+        "exam_names": ["Exame A", "Exame B"],
+        "desired_start_time": "2025-07-16T14:00:00"
+    }
+    """
+    data = request.get_json()
+    if not data: return jsonify({"erro": "Requisição JSON inválida."}), 400
+
+    patient_id = data.get('patient_id')
+    exam_names = data.get('exam_names')
+    desired_start_time = data.get('desired_start_time')
+
+    if not all([patient_id, exam_names, desired_start_time]):
+        return jsonify({"erro": "patient_id, exam_names e desired_start_time são obrigatórios."}), 400
+
+    try:
+        resultado = schedule_exams_at_specific_time(patient_id, exam_names, desired_start_time)
+        if resultado:
+            agendamentos_detalhados = []
+            start_time = datetime.fromisoformat(resultado['start_time'])
+            current_time = start_time
+            EXAM_DURATION = timedelta(minutes=30)
+
+            for exam_name in resultado['scheduled_order']:
+                agendamentos_detalhados.append({
+                    "exame": exam_name,
+                    "horario": current_time.isoformat()
+                })
+                current_time += EXAM_DURATION
+
+            return jsonify({
+                "mensagem": "Exames agendados com sucesso no horário solicitado!",
+                "agendamentos": agendamentos_detalhados
+            }), 201
+        else:
+            return jsonify({
+                "erro": "O horário solicitado não está disponível, mesmo tentando otimizar a ordem dos exames."
+            }), 409
+
+    except ValueError as ve:
+        return jsonify({"erro": str(ve)}), 400
+    except Exception as e:
         print(f"ERRO INESPERADO NA ROTA: {e}")
         return jsonify({"erro": "Ocorreu um erro interno no servidor."}), 500
