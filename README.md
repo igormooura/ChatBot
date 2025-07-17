@@ -2,7 +2,7 @@ Ative o ambiente virtual
 
 Windows: 
 ```
-\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 Linux:
