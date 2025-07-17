@@ -37,12 +37,27 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      await axios.post("http://127.0.0.1:5000/auth/request-token", {
-        email,
-        cpf,
-      });
+      if (cpf === "000.000.000-00" && email.toLowerCase() === "admin") {
+        // Login direto para admin — sem 2FA
+        // Aqui idealmente backend deve permitir gerar um JWT direto para esse admin
+        // Se não existir rota, você pode mockar ou implementar uma nova rota backend
 
-      setStep("code");
+        // Exemplo: chamar rota backend para login admin direto (se existir)
+        // const { data } = await axios.post("http://127.0.0.1:5000/auth/admin-login", { email, cpf });
+
+        // Aqui mockando para efeito do frontend funcionar:
+        const data = { jwt_token: "jwt-token-admin-mockado", email };
+
+        localStorage.setItem("jwt_token", data.jwt_token);
+        navigate("/admin");
+      } else {
+        // Usuário comum - pede token 2FA
+        await axios.post("http://127.0.0.1:5000/auth/request-token", {
+          email,
+          cpf,
+        });
+        setStep("code");
+      }
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Falha ao solicitar o código."
