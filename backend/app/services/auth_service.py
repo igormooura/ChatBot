@@ -6,7 +6,6 @@ from .. import db
 from ..models import Patient, AuthToken
 
 def create_patient(name, cpf, email):
-    """Cria um novo paciente se o CPF ou E-mail não existirem."""
     if Patient.query.filter((Patient.cpf == cpf) | (Patient.email == email)).first():
         return None, "CPF ou E-mail já registado."
     
@@ -16,9 +15,6 @@ def create_patient(name, cpf, email):
     return new_patient, "Paciente registado com sucesso."
 
 def request_login_token(email, cpf):
-    """
-    Verifica as credenciais e, se válidas, gera e 'envia' um token de login.
-    """
     patient = Patient.query.filter_by(email=email, cpf=cpf).first()
     if not patient:
         return None, "Credenciais inválidas. Verifique o seu e-mail e CPF."
@@ -33,31 +29,39 @@ def request_login_token(email, cpf):
     return new_token.token, "Um token de acesso foi enviado para o seu e-mail."
 
 def verify_login_token(token_str):
-    """
-    Verifica um token OTP. Se for válido, apaga-o e GERA um token JWT.
-    """
-    token = AuthToken.query.filter_by(token=token_str).first()
+    try:
+        token = AuthToken.query.filter_by(token=token_str).first()
+        if not token:
+            print("DEBUG - Token não encontrado.")
+            return None, "Token inválido."
 
-    if not token or token.is_expired():
-        return None, "Token inválido ou expirado."
+        if token.is_expired():
+            print("DEBUG - Token expirado.")
+            return None, "Token expirado."
 
-    patient = token.patient
+        patient = token.patient
+
+        db.session.delete(token)
+        db.session.commit()
+
+        secret = current_app.config.get('SECRET_KEY')
+        if not secret:
+            print("ERRO - SECRET_KEY não está definido!")
+            return None, "Erro interno de autenticação."
+
+        jwt_payload = {
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+            'iat': datetime.now(timezone.utc),
+            'sub': patient.id
+        }
+
+        jwt_token = jwt.encode(jwt_payload, secret, algorithm='HS256')
+
+        return {
+            "token": jwt_token,
+            "email": patient.email
+        }, "Autenticação bem-sucedida."
     
-    # O token OTP é de uso único, então apagamo-lo
-    db.session.delete(token)
-    db.session.commit()
-    
-    # Gera o token JWT
-    jwt_payload = {
-        'exp': datetime.now(timezone.utc) + timedelta(hours=24), # Expira em 24 horas
-        'iat': datetime.now(timezone.utc), # Data de criação
-        'sub': patient.id # O "assunto" do token é o ID do paciente
-    }
-    
-    jwt_token = jwt.encode(
-        jwt_payload,
-        current_app.config['SECRET_KEY'],
-        algorithm='HS256'
-    )
-    
-    return jwt_token, "Autenticação bem-sucedida. Use o token JWT para aceder."
+    except Exception as e:
+        print("ERRO INTERNO no verify_login_token:", str(e))
+        return None, "Erro interno ao verificar o token."
