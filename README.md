@@ -2,7 +2,7 @@ Ative o ambiente virtual
 
 Windows: 
 ```
-\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
 Linux:
@@ -16,7 +16,8 @@ POSTGRES_PASSWORD=<yoursecurepassword>
 POSTGRES_USER=<youruser>
 POSTGRES_DB=<yourdb>
 
-DB_USER=<youruser>
+// Suas credenciais devem ser iguais as do PgAdmin, user, name, passoword
+DB_USER=<youruser> 
 DB_NAME=<yourdb>
 DB_PASSWORD=<yoursecurepassword>
 DB_HOST=localhost
