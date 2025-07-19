@@ -1,9 +1,6 @@
-# backend/app/router/exame_routes.py
-
 from flask import Blueprint, request, jsonify
 from ..services.exame_service import find_and_schedule_sequential_exams
 
-# Cria um novo Blueprint para as rotas de exame
 bp = Blueprint('exames', __name__, url_prefix='/exames')
 
 @bp.route('/agendar-sequencial', methods=['POST'])
