@@ -6,9 +6,11 @@ from flask import Flask
 from flask_cors import CORS
 from config import qdrant_ready, gemini_ready
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail
 
 
 db = SQLAlchemy()
+mail = Mail()
 
 load_dotenv()
 
@@ -26,7 +28,8 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
-    
+    mail.init_app(app)
+
     # Uploads
     app.config['UPLOAD_FOLDER'] = 'uploads'
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB
@@ -34,6 +37,15 @@ def create_app():
         os.makedirs(app.config['UPLOAD_FOLDER'])
     from .router.upload_pdf import bp as upload_blueprint
     app.register_blueprint(upload_blueprint)
+
+    # Configurações do Flask-Mail a partir do .env
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+    app.config['SECRET_KEY_EMAIL'] = os.getenv('SECRET_KEY_EMAIL')
 
     from . import models
 
@@ -49,6 +61,7 @@ def create_app():
     app.register_blueprint(exame_blueprint)
     from .router.auth_routes import bp as auth_blueprint
     app.register_blueprint(auth_blueprint)
+    
     
     @app.route('/health')
     def health_check():

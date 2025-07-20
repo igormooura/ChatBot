@@ -1,8 +1,9 @@
+# backend/seed_database.py
+
 from app import create_app, db
 # Importe apenas os modelos que serão populados
 from app.models.Doctor import Doctor
 from app.models.Patient import Patient
-# Assumindo que você tem um modelo Exam.py similar aos outros
 from app.models.Exam import Exam 
 
 # --- DADOS DE EXEMPLO ---
