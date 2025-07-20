@@ -1,73 +1,62 @@
+import { useEffect, useRef } from "react";
 import Background from "../components/Background/Background";
-import ChatMessage from "../components/Chat/ChatMessage";
 import Header from "../components/Header/Header";
 import ChatContainer from "../components/Chat/ChatContainer";
 import LoadingIndicator from "../components/Chat/LoadingIndicator";
 import ChatInputs from "../components/Chat/ChatInputs";
-import { useState } from "react";
-
-type Message = {
-  id: number;
-  sender: "user" | "bot";
-  text: string;
-  timestamp: string;
-};
+import ChatMessage from "../components/Chat/ChatMessage";
+import HorarioSlots from "../components/Chat/HorarioSlots";
+import OptionButtons from "../components/Chat/OptionButtons";
+import { useChat } from "../hooks/useChat";
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [input, setInput] = useState("");
+  const {
+    messages,
+    isLoading,
+    input,
+    setInput,
+    chatState,
+    selectedSlots,
+    handleSendMessage,
+    handleSelectSlot,
+    handleFinalize,
+    handleStartAgendamento
+  } = useChat();
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-    const userMessage: Message = {
-      id: Date.now(),
-      sender: "user",
-      text: input,
-      timestamp: new Date().toISOString(),
-    };
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    setTimeout(() => {
-      // pra simular o bot
-      const botMessage: Message = {
-        id: Date.now() + 1,
-        sender: "bot",
-        text: "Entendi! Em que mais posso ajudar?",
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-      setIsLoading(false);
-    }, 2000);
-  };
+  const showInput = ["AWAITING_REQUEST", "AWAITING_CONFIRMATION_DETAILS"].includes(chatState);
 
   return (
     <Background>
       <Header />
-      <div className="flex justify-center">
+      <div className="flex justify-center h-[calc(100vh-theme(height.header))]">
         <ChatContainer>
-          {/* definitivamente nao sei se é uma boa pratica colocar esse 70vh */}
-          <div className="flex flex-col h-[70vh] max-w-5xl mx-auto"> 
-            <div className="flex-grow overflow-y-auto px-4 py-2">
+          <div className="flex flex-col h-full max-w-5xl mx-auto">
+            <div className="flex-grow overflow-y-auto px-4 py-2 space-y-4">
               {messages.map((msg) => (
-                <ChatMessage key={msg.id} messages={msg} />
-              ))}
-              {isLoading && (
-                <div className="flex mb-4 justify-start">
-                  <LoadingIndicator />
+                <div key={msg.id}>
+                  {msg.text && <ChatMessage messages={msg} />}
+                  {msg.options && <OptionButtons options={msg.options} />}
+                  {msg.horarios && (
+                    <HorarioSlots
+                      horarios={msg.horarios}
+                      selectedSlots={selectedSlots}
+                      onSelectSlot={handleSelectSlot}
+                      onFinalize={handleFinalize}
+                      onNewSearch={handleStartAgendamento}
+                    />
+                  )}
                 </div>
-              )}
+              ))}
+              {isLoading && <div className="flex mb-4 justify-start"><LoadingIndicator /></div>}
+              <div ref={chatEndRef} />
             </div>
-            <ChatInputs
-              input={input}
-              setInput={setInput}
-              loading={isLoading}
-              onSend={handleSendMessage}
-            />
+            {showInput && <ChatInputs input={input} setInput={setInput} loading={isLoading} onSend={handleSendMessage} />}
           </div>
         </ChatContainer>
       </div>
