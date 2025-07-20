@@ -1,5 +1,5 @@
 # backend/app/services/email_service.py
-
+# -*- coding: utf-8 -*-
 from flask_mail import Message
 from .. import mail
 from flask import current_app, render_template
@@ -43,7 +43,7 @@ def send_registration_token(user_email):
     <h1>Bem-vindo ao nosso sistema!</h1>
     <p>Obrigado por se registrar. Por favor, use o token a seguir para ativar sua conta:</p>
     <h2><strong>{token}</strong></h2>
-    <p>Este token é válido por 1 hora.</p>
+    <p>Este token e válido por 1 hora.</p>
     """
     
-    send_email(user_email, "Confirmação de Cadastro", html_body)
+    send_email(user_email, "Confirmacao de Cadastro", html_body)

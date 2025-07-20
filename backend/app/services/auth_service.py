@@ -20,7 +20,7 @@ def create_patient(name, cpf, email):
     ).first()
 
     if paciente_existente:
-        return None, "CPF ou E-mail já registado."
+        return None, "CPF ou E-mail ja registado."
 
     # Cria e salva o novo paciente com o CPF limpo
     novo_paciente = Patient(name=name, cpf=cpf_limpo, email=email)
@@ -38,25 +38,25 @@ def request_login_token(email, cpf):
     patient = Patient.query.filter_by(cpf=cpf_limpo).first()
 
     if not patient:
-        return None, "CPF não encontrado."
+        return None, "CPF nao encontrado."
     
     if patient.email != email:
-        return None, "O e-mail não corresponde ao CPF informado."
+        return None, "O e-mail nao corresponde ao CPF informado."
 
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     one_time_token = serializer.dumps(patient.email, salt='login-token')
 
     html_body = f"""
-        <h1>Seu Código de Acesso</h1>
-        <p>Use o código abaixo para fazer login no sistema.</p>
-        <p>Este código é válido por 10 minutos.</p>
+        <h1>Seu Codigo de Acesso</h1>
+        <p>Use o codigo abaixo para fazer login no sistema.</p>
+        <p>Este ccdigo e valido por 10 minutos.</p>
         <h2 style="font-size: 1.5em; letter-spacing: 3px; text-align: center; background-color: #f0f0f0; padding: 10px; border-radius: 5px;">
             <strong>{one_time_token}</strong>
         </h2>
     """
 
     try:
-        send_email(to=patient.email, subject="Seu Código de Acesso", template=html_body)
+        send_email(to=patient.email, subject="Seu Codigo de Acesso", template=html_body)
         return one_time_token, "Token enviado para o seu e-mail."
     except Exception as e:
         current_app.logger.error(f"Falha ao enviar e-mail: {e}")
