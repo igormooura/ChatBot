@@ -1,12 +1,10 @@
-# backend/seed_database.py
-
 from app import create_app, db
-# Importe apenas os modelos que serão populados
 from app.models.Doctor import Doctor
 from app.models.Patient import Patient
-from app.models.Exam import Exam 
+from app.models.Exam import Exam
+from app.models.DoctorAvailability import DoctorAvailability
+from datetime import datetime, timedelta
 
-# --- DADOS DE EXEMPLO ---
 
 DADOS_MEDICOS = {
     "Cardiologia": "Dr. Arnaldo Coração",
@@ -35,7 +33,8 @@ TIPOS_DE_EXAME = [
 
 def popular_banco():
     """
-    Recria o banco de dados e o popula com dados de exemplo para Médicos e Pacientes.
+    Recria o banco de dados e o popula com dados de exemplo para Médicos, Pacientes,
+    Exames e, mais importante, a Disponibilidade dos Médicos (usando UTC).
     """
     app = create_app()
     with app.app_context():
@@ -44,7 +43,7 @@ def popular_banco():
         db.create_all()
         print("Tabelas recriadas com sucesso.")
 
-        # --- Populando Médicos ---
+
         print("\nPopulando a tabela de Médicos...")
         for especialidade, nome in DADOS_MEDICOS.items():
             novo_medico = Doctor(name=nome, specialty=especialidade)
@@ -52,8 +51,6 @@ def popular_banco():
         db.session.commit()
         print(f"  - {len(DADOS_MEDICOS)} médicos foram adicionados.")
 
-        # --- Populando Pacientes ---
-        # A lógica foi simplificada, pois não há mais um modelo 'User' separado.
         print("\nPopulando a tabela de Pacientes...")
         for dados_paciente in DADOS_PACIENTES:
             novo_paciente = Patient(
@@ -62,18 +59,34 @@ def popular_banco():
                 email=dados_paciente["email"]
             )
             db.session.add(novo_paciente)
-        
-        # Faz um único commit para salvar todos os novos pacientes.
         db.session.commit()
         print(f"  - {len(DADOS_PACIENTES)} pacientes foram adicionados.")
 
-        # --- Populando Tipos de Exames (se necessário) ---
         print("\nPopulando a tabela de Exames...")
         for tipo_exame in TIPOS_DE_EXAME:
             novo_exame = Exam(type=tipo_exame)
             db.session.add(novo_exame)
         db.session.commit()
         print(f"  - {len(TIPOS_DE_EXAME)} tipos de exame foram adicionados.")
+
+        print("\nPopulando a tabela de Disponibilidade de Médicos (com horário UTC)...")
+        medicos = db.session.query(Doctor).all()
+        total_horarios = 0
+        
+        for medico in medicos:
+            for dia in range(7): 
+                data_base = datetime.utcnow() + timedelta(days=dia)
+                for hora in range(9, 12):
+                    horario = DoctorAvailability(doctor_id=medico.id, date=data_base.replace(hour=hora, minute=0, second=0, microsecond=0))
+                    db.session.add(horario)
+                    total_horarios += 1
+                for hora in range(14, 18):
+                    horario = DoctorAvailability(doctor_id=medico.id, date=data_base.replace(hour=hora, minute=0, second=0, microsecond=0))
+                    db.session.add(horario)
+                    total_horarios += 1
+
+        db.session.commit()
+        print(f"  - {total_horarios} horários disponíveis foram adicionados.")
 
         print("\nBanco de dados populado com sucesso!")
 
