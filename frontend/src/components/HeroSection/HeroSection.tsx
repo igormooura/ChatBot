@@ -1,4 +1,7 @@
 import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
+
+const MotionLink = motion(Link);
 
 const HeroSection = () => {
   return (
@@ -26,13 +29,15 @@ const HeroSection = () => {
         Atendimento humanizado com tecnologia de ponta para sua saúde.
       </motion.p>
 
-      <motion.button
+      <MotionLink
+        to="/chatbot"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className="bg-blue-800 text-white text-lg font-semibold px-8 py-3 rounded hover:bg-blue-900 transition"
       >
         Agendar Consulta
-      </motion.button>
+      </MotionLink>
+      
     </motion.section>
   );
 };
