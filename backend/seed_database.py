@@ -1,4 +1,3 @@
-
 from app import create_app, db
 from app.models.Doctor import Doctor
 from app.models.Patient import Patient

@@ -23,6 +23,12 @@ DB_PASSWORD=<yoursecurepassword>
 DB_HOST=localhost
 
 SECRET_KEY=teste # SECRET KEY PARA JWT
+MAIL_SERVER=smtp.googlemail.com
+MAIL_PORT=587 ou 465
+MAIL_USE_TLS=True
+MAIL_USERNAME=<email.smtp>
+MAIL_PASSWORD=<senha.smtp>
+SECRET_KEY_EMAIL=teste
 ```
 
 
