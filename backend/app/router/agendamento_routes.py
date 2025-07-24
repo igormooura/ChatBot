@@ -1,4 +1,3 @@
-
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from ..services.gemini_service import analisar_pedido_com_gemini, gerar_explicacao_com_gemini

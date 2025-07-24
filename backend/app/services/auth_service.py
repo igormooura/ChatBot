@@ -10,9 +10,7 @@ from ..models import Patient
 from .email_service import send_email 
 
 def create_patient(name, cpf, email):
-    """
-    Cria um novo paciente no banco de dados, garantindo que o CPF seja salvo sem pontuação.
-    """
+   
     cpf_limpo = "".join(filter(str.isdigit, cpf))
 
     paciente_existente = Patient.query.filter(
@@ -25,15 +23,13 @@ def create_patient(name, cpf, email):
     # Cria e salva o novo paciente com o CPF limpo
     novo_paciente = Patient(name=name, cpf=cpf_limpo, email=email)
     db.session.add(novo_paciente)
+    
     db.session.commit()
     
     return novo_paciente, "Paciente registrado com sucesso."
 
 
 def request_login_token(email, cpf):
-    """
-    Verifica o paciente, gera um token de uso único e o envia por e-mail.
-    """
     cpf_limpo = "".join(filter(str.isdigit, cpf))
     patient = Patient.query.filter_by(cpf=cpf_limpo).first()
 
@@ -62,29 +58,41 @@ def request_login_token(email, cpf):
         current_app.logger.error(f"Falha ao enviar e-mail: {e}")
         return None, "Erro ao enviar o e-mail."
 
-
-def verify_login_token(token):
-    """
-    Verifica o token de uso único. Se for válido, retorna um token JWT de sessão.
-    """
-    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+def verify_login_token(token_str):
     try:
-        email = serializer.loads(token, salt='login-token', max_age=600) # 600 segundos = 10 minutos
-    except SignatureExpired:
-        return None, "Token expirado. Por favor, solicite um novo."
-    except Exception:
-        return None, "Token inválido."
+        token = AuthToken.query.filter_by(token=token_str).first()
+        if not token:
+            print("DEBUG - Token não encontrado.")
+            return None, "Token inválido."
 
-    # Se o token é válido, busca o paciente pelo e-mail contido no token
-    patient = Patient.query.filter_by(email=email).first()
-    if not patient:
-        return None, "Usuário do token não encontrado."
+        if token.is_expired():
+            print("DEBUG - Token expirado.")
+            return None, "Token expirado."
 
-    payload = {
-        'iat': datetime.now(timezone.utc), # Issued at
-        'exp': datetime.now(timezone.utc) + timedelta(hours=8), # Expiration time
-        'sub': patient.id, # Subject (o ID do usuário)
-    }
-    jwt_token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+        patient = token.patient
+
+        db.session.delete(token)
+        db.session.commit()
+
+        secret = current_app.config.get('SECRET_KEY')
+        if not secret:
+            print("ERRO - SECRET_KEY não está definido!")
+            return None, "Erro interno de autenticação."
+
+        jwt_payload = {
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+            'iat': datetime.now(timezone.utc),
+            'sub': patient.id
+        }
+
+        jwt_token = jwt.encode(jwt_payload, secret, algorithm='HS256')
+
+        return {
+            "token": jwt_token,
+            "email": patient.email
+        }, "Autenticação bem-sucedida."
     
-    return jwt_token, "Login realizado com sucesso."
+    except Exception as e:
+        print("ERRO INTERNO no verify_login_token:", str(e))
+        return None, "Erro interno ao verificar o token."
+
