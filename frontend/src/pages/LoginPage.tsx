@@ -30,14 +30,11 @@ const LoginPage = () => {
 const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
   e.preventDefault();
 
-  if (!email.includes("@") || cpf.length !== 14) {
-    alert("Por favor, preencha um e-mail e CPF válidos.");
-    return;
-  }
+  console.log(`cpf: '${cpf}', email: '${email}'`);
 
   setLoading(true);
   try {
-    if (cpf === "000.000.000-00" && email.toLowerCase() === "admin") {
+    if (cpf.trim() === "000.000.000-00" && email.trim().toLowerCase() === "admin") {
       localStorage.setItem("jwt_token", "jwt-token-admin-mockado");
       navigate("/admin");
     } else {
@@ -57,6 +54,7 @@ const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
     setLoading(false);
   }
 };
+
 
 const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
   e.preventDefault();
