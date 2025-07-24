@@ -1,13 +1,15 @@
+from dotenv import load_dotenv
+import os
 from qdrant_client import QdrantClient, models 
 from sentence_transformers import SentenceTransformer 
 
 # --- Configurações ---
-QDRANT_HOST = "localhost"
-QDRANT_HTTP_PORT = 6333 # Certifique-se que é a porta HTTP correta do seu Qdrant
-QDRANT_GRPC_PORT = 6334 # Certifique-se que é a porta gRPC correta
-COLLECTION_NAME = "especialidades_medicas"
-EMBEDDING_MODEL_NAME = 'paraphrase-multilingual-MiniLM-L12-v2'
-VECTOR_SIZE = 384 # Deve corresponder à saída do EMBEDDING_MODEL_NAME
+QDRANT_HOST = os.getenv('QDRANT_HOST', 'localhost')
+QDRANT_HTTP_PORT = int(os.getenv('QDRANT_HTTP_PORT', 6333))
+QDRANT_GRPC_PORT = int(os.getenv('QDRANT_GRPC_PORT', 6334))
+COLLECTION_NAME = os.getenv('COLLECTION_NAME', 'especialidades_medicas')
+EMBEDDING_MODEL_NAME = os.getenv('EMBEDDING_MODEL_NAME', 'paraphrase-multilingual-MiniLM-L12-v2')
+VECTOR_SIZE = int(os.getenv('VECTOR_SIZE', 384))
 DISTANCE_METRIC = models.Distance.COSINE
 
 # Copie EXATAMENTE o mesmo dicionário ESPECIALISTAS_SINTOMAS do seu script do chatbot aqui

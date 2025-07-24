@@ -1,0 +1,44 @@
+services:
+  db: # Seu serviço PostgreSQL existente
+    image: postgres:16.2
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    env_file: .env
+
+  qdrant: 
+    image: qdrant/qdrant:latest 
+    container_name: meu_qdrant_compose 
+    ports:
+      - "6333:6333" 
+      - "6334:6334" 
+    volumes:
+      - qdrant_storage_compose:/qdrant/storage
+
+  backend:
+    build: ./backend
+    container_name: flask-backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5000:5000"
+    env_file: .env
+    depends_on:
+      - db
+      - qdrant
+
+  frontend:
+    build: ./frontend
+    container_name: react-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data: 
+  qdrant_storage_compose: {} 
