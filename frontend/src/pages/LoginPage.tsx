@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
+
 import Background from "../components/Background/Background";
 import Box from "../components/Box/Box";
 import Header from "../components/Header/Header";
@@ -20,70 +21,70 @@ const LoginPage = () => {
   const [code, setCode] = useState("");
   const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
   const handleCpfChange = (e: ChangeEvent<HTMLInputElement>) =>
     setCpf(maskCpf(e.target.value));
 
-  const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setError("");
+const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
 
-    if (!email || !cpf) {
-      return setError("Favor colocar seu CPF e seu email.");
+  if (!email.includes("@") || cpf.length !== 14) {
+    alert("Por favor, preencha um e-mail e CPF válidos.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    if (cpf === "000.000.000-00" && email.toLowerCase() === "admin") {
+      localStorage.setItem("jwt_token", "jwt-token-admin-mockado");
+      navigate("/admin");
+    } else {
+      await axios.post("http://127.0.0.1:5000/auth/request-token", { email, cpf });
+      alert("Código enviado para o seu email!");
+      setStep("code");
     }
-
-    setLoading(true);
-    try {
-      if (cpf === "000.000.000-00" && email.toLowerCase() === "admin") {
-        // Login direto para admin — sem 2FA
-        const data = { jwt_token: "jwt-token-admin-mockado", email };
-        localStorage.setItem("jwt_token", data.jwt_token);
-        navigate("/admin");
-      } else {
-        // Usuário comum - pede token 2FA
-        await axios.post("http://127.0.0.1:5000/auth/request-token", {
-          email,
-          cpf,
-        });
-        setStep("code");
-      }
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao solicitar o código."
-      );
-    } finally {
-      setLoading(false);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      alert(`Erro: ${error.response?.data?.erro || error.message || "Tente novamente."}`);
+    } else if (error instanceof Error) {
+      alert(`Erro: ${error.message}`);
+    } else {
+      alert("Erro desconhecido. Tente novamente.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setError("");
+const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
 
-    if (!code.trim()) {
-      return setError("Favor insira o código.");
+  if (code.trim().length === 0) {
+    alert("Por favor, digite o código que você recebeu.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const { data } = await axios.post("http://127.0.0.1:5000/auth/verify-token", { token: code });
+    localStorage.setItem("jwt_token", data.jwt_token);
+    alert("Login realizado com sucesso!");
+    navigate("/meu-perfil");
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      alert(`Erro: ${error.response?.data?.erro || error.message || "Tente novamente."}`);
+    } else if (error instanceof Error) {
+      alert(`Erro: ${error.message}`);
+    } else {
+      alert("Erro desconhecido. Tente novamente.");
     }
+  } finally {
+    setLoading(false);
+  }
+};
 
-    setLoading(true);
-    try {
-      const { data } = await axios.post(
-        "http://127.0.0.1:5000/auth/verify-token",
-        { token: code }
-      );
-
-      localStorage.setItem("jwt_token", data.jwt_token);
-      navigate("/user");
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Código inválido ou expirado."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Background>
@@ -94,9 +95,7 @@ const LoginPage = () => {
             <>
               <h1 className="font-bold text-2xl">Minhas consultas</h1>
               <p className="text-gray-500 p-3">
-                Coloque seu email e CPF para verificar as consultas que você
-                marcou. Você receberá um código no seu email para garantir seu
-                login.
+                Coloque seu email e CPF para verificar as consultas que você marcou. Você receberá um código no seu email para garantir seu login.
               </p>
               <Input
                 placeholder="Email"
@@ -112,7 +111,6 @@ const LoginPage = () => {
                 required
                 onChange={handleCpfChange}
               />
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               <button
                 className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
                 disabled={loading}
@@ -127,8 +125,7 @@ const LoginPage = () => {
             <>
               <h1 className="font-bold text-2xl">Código de Verificação</h1>
               <p className="text-gray-500 p-3">
-                Você recebeu um código em <strong>{email}</strong>. Por favor,
-                insira-o abaixo.
+                Você recebeu um código em <strong>{email}</strong>. Por favor, insira-o abaixo.
               </p>
               <Input
                 placeholder="Digite aqui o seu código"
@@ -137,7 +134,6 @@ const LoginPage = () => {
                 required
                 onChange={(e) => setCode(e.target.value)}
               />
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               <button
                 className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
                 disabled={loading}
