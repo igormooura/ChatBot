@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type MouseEvent } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import Background from "../components/Background/Background";
 import Box from "../components/Box/Box";
 import Header from "../components/Header/Header";
@@ -22,12 +22,12 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const handleCpfChange = (e: ChangeEvent<HTMLInputElement>) =>
     setCpf(maskCpf(e.target.value));
 
-  const handleSendCode = async (e: MouseEvent<HTMLButtonElement>) => {
+  const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setError("");
 
@@ -40,7 +40,6 @@ const LoginPage = () => {
       if (cpf === "000.000.000-00" && email.toLowerCase() === "admin") {
         // Login direto para admin — sem 2FA
         const data = { jwt_token: "jwt-token-admin-mockado", email };
-
         localStorage.setItem("jwt_token", data.jwt_token);
         navigate("/admin");
       } else {
@@ -60,9 +59,11 @@ const LoginPage = () => {
     }
   };
 
-  const handleLogin = async () => {
+  const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     setError("");
-    if (!code) {
+
+    if (!code.trim()) {
       return setError("Favor insira o código.");
     }
 
@@ -70,17 +71,11 @@ const LoginPage = () => {
     try {
       const { data } = await axios.post(
         "http://127.0.0.1:5000/auth/verify-token",
-        {
-          token: code,
-        }
+        { token: code }
       );
 
-      console.log("Login realizado com sucesso:", data.jwt_token, data.email);
-
       localStorage.setItem("jwt_token", data.jwt_token);
-
-      navigate("/user"); 
-
+      navigate("/user");
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Código inválido ou expirado."
@@ -91,89 +86,77 @@ const LoginPage = () => {
   };
 
   return (
-    <>
-      <Background>
-        <Header />
-        <div className="flex justify-center items-center min-h-screen">
-          <Box>
-            {step === "email" && (
-              <>
-                <h1 className="font-bold text-2xl">Minhas consultas</h1>
-                <p className="text-gray-500 p-3">
-                  Coloque seu email e CPF para verificar as consultas que você marcou. Você receberá um código no seu email para garantir seu login.
-                </p>
+    <Background>
+      <Header />
+      <div className="flex justify-center items-center min-h-screen">
+        <Box>
+          {step === "email" && (
+            <>
+              <h1 className="font-bold text-2xl">Minhas consultas</h1>
+              <p className="text-gray-500 p-3">
+                Coloque seu email e CPF para verificar as consultas que você
+                marcou. Você receberá um código no seu email para garantir seu
+                login.
+              </p>
+              <Input
+                placeholder="Email"
+                type="email"
+                value={email}
+                required
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                placeholder="CPF"
+                inputMode="numeric"
+                value={cpf}
+                required
+                onChange={handleCpfChange}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+              <button
+                className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
+                disabled={loading}
+                onClick={handleRequestCode}
+              >
+                {loading ? "Enviando..." : "Enviar código"}
+              </button>
+            </>
+          )}
 
-                <Input
-                  placeholder="Email"
-                  type="email"
-                  value={email}
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-
-                <Input
-                  placeholder="CPF"
-                  inputMode="numeric"
-                  value={cpf}
-                  required
-                  onChange={handleCpfChange}
-                  pattern={
-                    cpf.length === 14
-                      ? "^(?!^(\\d)\\1{10}$)\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}$"
-                      : undefined
-                  }
-                />
-                
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-                <button
-                  className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
-                  disabled={loading}
-                  onClick={handleSendCode}
-                >
-                  {loading ? "Enviando..." : "Enviar código"}
-                </button>
-              </>
-            )}
-
-            {step === "code" && (
-              <>
-                <h1 className="font-bold text-2xl">Código de Verificação</h1>
-                <p className="text-gray-500 p-3">
-                  Você recebeu um código em <strong>{email}</strong>. Por favor, insira-o abaixo.
-                </p>
-
-                <Input
-                  placeholder="Digite aqui o seu código"
-                  inputMode="numeric"
-                  value={code}
-                  required
-                  onChange={(e) => setCode(e.target.value)}
-                />
-                
-                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-
-                <button
-                  className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
-                  disabled={loading}
-                  onClick={handleLogin}
-                >
-                  {loading ? "Verificando..." : "Verificar e Entrar"}
-                </button>
-
-                <button
-                  className="text-sm text-blue-500 underline mt-2 disabled:opacity-50"
-                  disabled={loading}
-                  onClick={() => setStep("email")}
-                >
-                  Mudar email ou CPF
-                </button>
-              </>
-            )}
-          </Box>
-        </div>
-      </Background>
-    </>
+          {step === "code" && (
+            <>
+              <h1 className="font-bold text-2xl">Código de Verificação</h1>
+              <p className="text-gray-500 p-3">
+                Você recebeu um código em <strong>{email}</strong>. Por favor,
+                insira-o abaixo.
+              </p>
+              <Input
+                placeholder="Digite aqui o seu código"
+                inputMode="numeric"
+                value={code}
+                required
+                onChange={(e) => setCode(e.target.value)}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+              <button
+                className="btn-primary mt-4 bg-blue-600 text-white font-semibold px-10 py-2 rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-blue-700 disabled:opacity-50"
+                disabled={loading}
+                onClick={handleVerifyCode}
+              >
+                {loading ? "Verificando..." : "Verificar e Entrar"}
+              </button>
+              <button
+                className="text-sm text-blue-500 underline mt-2 disabled:opacity-50"
+                disabled={loading}
+                onClick={() => setStep("email")}
+              >
+                Mudar email ou CPF
+              </button>
+            </>
+          )}
+        </Box>
+      </div>
+    </Background>
   );
 };
 
