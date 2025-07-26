@@ -12,19 +12,23 @@ def handle_sugestao():
     data = request.get_json()
     if not data or 'sintomas' not in data:
         return jsonify({"erro": "O campo 'sintomas' é obrigatório."}), 400
+
     sintomas = data['sintomas']
-    sugestoes_qdrant = sugerir_especialistas_qdrant(sintomas)
+    sugestoes_qdrant = sugerir_especialistas_qdrant(sintomas, top_k=3)
+
     if not sugestoes_qdrant:
-        return jsonify({"mensagem": "Não foi possível encontrar um especialista."}), 400
-    primeiro_especialista = sugestoes_qdrant[0][0] if sugestoes_qdrant else None
-    horarios_disponiveis = []
-    if primeiro_especialista:
-        info_pedido = {"especialista": primeiro_especialista} # A função de busca aqui espera um só
-        horarios_disponiveis = buscar_horarios_disponiveis_db(info_pedido)
+        return jsonify({
+            "explicacao": "Não foi possível identificar um especialista para os sintomas informados. Tente descrevê-los de outra forma.",
+            "sugestoes": []
+        }), 404
+
+    nomes_especialistas = [sugestao[0] for sugestao in sugestoes_qdrant]
+    
     explicacao_gemini = gerar_explicacao_com_gemini(sintomas, sugestoes_qdrant)
+
     return jsonify({
         "explicacao": explicacao_gemini,
-        "horarios_sugeridos": horarios_disponiveis[:5] 
+        "sugestoes": nomes_especialistas 
     })
 
 

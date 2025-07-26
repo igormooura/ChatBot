@@ -8,29 +8,57 @@ ESPECIALIDADES_VALIDAS = [
     "Cardiologia",
     "Dermatologia",
     "Ortopedia",
-    "Clínica Geral",
-    "Pediatria"
+    "Gastroenterologia",
+    "Neurologia",
+    "Oftalmologia",
+    "Otorrinolaringologia",
+    "Endocrinologia",
+    "Pneumologia",
+    "Urologia",
+    "Ginecologia",
+    "Clínica Geral"
 ]
 
 def gerar_explicacao_com_gemini(sintomas, sugestoes):
     if not gemini_ready:
-        return None
+        return "Não foi possível conectar ao nosso assistente de IA no momento."
+
     lista_sugestoes_texto = "\n".join([f"- {esp}" for esp, score in sugestoes])
+
     prompt = f"""
-    Você é um assistente de saúde virtual. Analise os sintomas e as sugestões de especialistas e gere uma explicação curta (2-3 frases) em português do Brasil, explicando por que essas sugestões fazem sentido. NÃO dê conselhos médicos e NÃO faça perguntas.
+    Sua tarefa é atuar como um assistente de saúde virtual empático e responsável.
+    Baseado nos sintomas do usuário e na lista de especialistas sugeridos, gere uma explicação clara e útil.
 
-    Sintomas: "{sintomas}"
-    Sugestões:
-    {lista_sugestoes_texto}
+    **Instruções Obrigatórias:**
 
-    Explicação:
+    1.  **Aviso Inicial:** Comece a sua resposta, SEMPRE e EXATAMENTE, com a frase:
+        "É importante lembrar que sou um assistente virtual e minhas sugestões não substituem a avaliação de um médico. Para um diagnóstico preciso, consulte um profissional de saúde."
+
+    2.  **Explicação Detalhada:** Após o aviso, explique de forma didática o motivo da sugestão de CADA especialista, conectando-o diretamente aos sintomas informados.
+
+    3.  **Formato do Título:** Antes da explicação de cada especialista, insira um título claro envolvido por ###.
+        Exemplo de formato:
+        ### Neurologista ###
+        A explicação sobre o neurologista vem aqui...
+        ### Clínico Geral ###
+        A explicação sobre o clínico geral vem aqui...
+    
+    4.  **Tom e Estilo:** Mantenha um tom tranquilizador e uma linguagem simples. Não use jargões médicos complexos, não faça perguntas e não dê conselhos médicos diretos.
+
+    **Dados para análise:**
+
+    * **Sintomas informados pelo usuário:** "{sintomas}"
+    * **Especialistas sugeridos para estes sintomas:**
+        {lista_sugestoes_texto}
+
+    **Inicie sua resposta agora, seguindo todas as instruções.**
     """
     try:
         response = gemini_model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         print(f"ERRO ao chamar a API do Gemini para explicação: {e}")
-        return None
+        return "Tivemos um problema ao gerar a explicação. Por favor, tente novamente."
 
 def analisar_pedido_com_gemini(texto_usuario):
     """

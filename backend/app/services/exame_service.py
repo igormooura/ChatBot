@@ -47,9 +47,6 @@ def _is_slot_globally_taken(slot_time: datetime, exam_id: int) -> bool:
     return db.session.query(ScheduledExam).filter_by(date=slot_time, exam_id=exam_id).first() is not None
 
 def _check_block_viability(block_start_time: datetime, ordered_exam_ids: list[int], patient_id: int) -> bool:
-    """
-    Função auxiliar que verifica se um bloco de tempo, para uma ordem específica de exames, é viável.
-    """
     target_date = block_start_time.date()
     patient_commitments = _get_patient_commitments(target_date, patient_id)
     current_slot_time = block_start_time
@@ -71,7 +68,6 @@ def _check_block_viability(block_start_time: datetime, ordered_exam_ids: list[in
     return True
 
 def _schedule_exams_in_db(patient_id: int, ordered_exam_ids: list[int], start_time: datetime) -> None:
-    """Função auxiliar para salvar uma sequência de exames no banco de dados dentro de uma transação."""
     try:
         current_time_for_scheduling = start_time
         for exam_id in ordered_exam_ids:
@@ -85,16 +81,9 @@ def _schedule_exams_in_db(patient_id: int, ordered_exam_ids: list[int], start_ti
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        print(f"ERRO DE BANCO DE DADOS AO AGENDAR: {e}")
         raise
 
-# --- FUNÇÕES DE SERVIÇO PRINCIPAIS ---
-
 def find_and_schedule_optimized_exams(patient_id: int, exam_names: list[str]) -> dict | None:
-    """
-    Encontra o primeiro horário disponível para uma lista de exames, testando
-    diferentes ordens para otimizar o encaixe.
-    """
     exam_objects = db.session.query(Exam).filter(Exam.type.in_(exam_names)).all()
     if len(exam_objects) != len(exam_names): raise ValueError("Um ou mais tipos de exame não foram encontrados.")
 
@@ -122,9 +111,6 @@ def find_and_schedule_optimized_exams(patient_id: int, exam_names: list[str]) ->
     return None
 
 def schedule_exams_at_specific_time(patient_id: int, exam_names: list[str], desired_start_str: str) -> dict | None:
-    """
-    Tenta agendar uma lista de exames em um horário específico, otimizando a ordem para caber.
-    """
     try:
         desired_start_time = datetime.fromisoformat(desired_start_str)
     except ValueError:
@@ -149,3 +135,56 @@ def schedule_exams_at_specific_time(patient_id: int, exam_names: list[str], desi
             }
             
     return None
+
+def suggest_optimized_schedule(patient_id: int, exam_names: list[str], start_search_date: date) -> dict | None:
+    exam_objects = db.session.query(Exam).filter(Exam.type.in_(exam_names)).all()
+    if len(exam_objects) != len(exam_names):
+        raise ValueError("Um ou mais tipos de exame não foram encontrados.")
+
+    exam_id_map = {exam.type: exam.id for exam in exam_objects}
+    exam_ids_in_order = [exam_id_map[name] for name in exam_names]
+    
+    for i in range(30): # Procura por horários nos próximos 30 dias
+        target_date = start_search_date + timedelta(days=i)
+        all_permutations = list(itertools.permutations(exam_ids_in_order))
+
+        for permuted_ids in all_permutations:
+            first_exam_id = permuted_ids[0]
+            possible_start_slots = _fetch_exam_availability_or_default(target_date, first_exam_id)
+            
+            for block_start in possible_start_slots:
+                if _check_block_viability(block_start, permuted_ids, patient_id):
+                    scheduled_exam_names = [next(e.type for e in exam_objects if e.id == eid) for eid in permuted_ids]
+                    
+                    agendamentos_detalhados = []
+                    current_time = block_start
+                    for exam_name in scheduled_exam_names:
+                        agendamentos_detalhados.append({
+                            "exame": exam_name,
+                            "horario": current_time.isoformat()
+                        })
+                        current_time += EXAM_DURATION
+
+                    return {
+                        "sugestao_agendamento": agendamentos_detalhados
+                    }
+                    
+    return None
+
+def get_all_available_slots_for_exams(exam_names: list[str], target_date: date) -> dict:
+    exam_objects = db.session.query(Exam).filter(Exam.type.in_(exam_names)).all()
+    if len(exam_objects) != len(exam_names):
+        raise ValueError("Um ou mais tipos de exame não foram encontrados.")
+
+    all_slots = {}
+    for exam in exam_objects:
+        exam_day_slots = _fetch_exam_availability_or_default(target_date, exam.id)
+        
+        free_slots = []
+        for slot_time in exam_day_slots:
+            if not _is_slot_globally_taken(slot_time, exam.id):
+                free_slots.append(slot_time.isoformat())
+        
+        all_slots[exam.type] = free_slots
+
+    return all_slots

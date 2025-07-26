@@ -29,7 +29,7 @@ const ChatPage = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const showInput = ["AWAITING_REQUEST", "AWAITING_CONFIRMATION_DETAILS"].includes(chatState);
+  const showInput = ["AWAITING_REQUEST", "AWAITING_CONFIRMATION_DETAILS", "AWAITING_SUGGESTION_INPUT"].includes(chatState);
 
   return (
     <Background>
