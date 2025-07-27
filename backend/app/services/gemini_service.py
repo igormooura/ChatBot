@@ -140,3 +140,49 @@ def identificar_exames_com_gemini(texto_pdf):
     except Exception as e:
         print(f"ERRO ao chamar a API do Gemini para identificar exames: {e}")
         return {"erro": f"Ocorreu um erro na comunicação com a IA: {e}"}
+
+
+def analisar_data_exame_com_gemini(texto_usuario: str) -> dict | None:
+    """
+    Usa o Gemini para extrair APENAS a data e o período do texto do usuário para agendamento de exame.
+    """
+    if not gemini_model:
+        print("Modelo Gemini não inicializado.")
+        return {
+            "data_base": (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d'),
+            "periodo_dia": "qualquer"
+        }
+
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    
+    prompt = f"""
+    Sua tarefa é analisar o texto do usuário e extrair a data e o período do dia para um agendamento de exame.
+    A data de referência para 'hoje' é: {data_hoje}.
+    Responda APENAS com um objeto JSON válido.
+    
+    O JSON deve ter as seguintes chaves:
+    - "data_base": string (a data no formato "AAAA-MM-DD")
+    - "periodo_dia": string ("manha", "tarde", ou "qualquer")
+
+    Se uma informação não for encontrada, o valor correspondente deve ser a data de amanhã para "data_base" e "qualquer" para "periodo_dia".
+
+    Exemplo 1:
+    Texto: "quero marcar para dia 29/07 no período da manhã"
+    JSON: {{"data_base": "2025-07-29", "periodo_dia": "manha"}}
+
+    Exemplo 2:
+    Texto: "pode ser na próxima sexta"
+    JSON: {{"data_base": "2025-08-01", "periodo_dia": "qualquer"}}
+
+    Agora, analise o seguinte texto:
+    Texto: "{texto_usuario}"
+    JSON: 
+    """
+    try:
+        response = gemini_model.generate_content(prompt)
+        json_text = response.text.strip().replace("```json", "").replace("```", "")
+        return json.loads(json_text)
+    except Exception as e:
+        print(f"ERRO ao analisar data de exame com Gemini: {e}")
+        return None
+    
