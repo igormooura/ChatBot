@@ -123,7 +123,7 @@ def handle_agendamento_especifico():
 def handle_busca_horarios_por_texto():
     """
     Recebe um pedido em texto, extrai a data usando a função 
-    analisar_data_exame_com_gemini e busca os horários disponíveis.
+    analisar_data_exame_com_gemini e busca os horários disponíveis..
     """
     data = request.get_json()
     exam_names = data.get('exam_names')
@@ -151,3 +151,4 @@ def handle_busca_horarios_por_texto():
     except Exception as e:
         print(f"Erro em /buscar-horarios-por-texto: {e}")
         return jsonify({"erro": "Ocorreu um erro interno ao processar seu pedido."}), 500
+    
