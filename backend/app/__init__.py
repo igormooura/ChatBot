@@ -7,27 +7,27 @@ from flask_cors import CORS
 from config import qdrant_ready, gemini_ready
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
-
-# 1. Inicializa as extensões (sem o app ainda)
 db = SQLAlchemy()
 mail = Mail()
 
-# 2. Carrega as variáveis de ambiente do arquivo .env
-load_dotenv()
-db_user = os.getenv('DB_USER')
-db_password = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_name = os.getenv('DB_NAME')
+# --- CORREÇÃO APLICADA AQUI ---
+# Define cada variável corretamente.
+db_user = "chatbotuser"
+db_password = "chatbotpass"
+db_host = "localhost"   # Host é o nome do servidor
+db_port = 5433          # Porta é um número separado
+db_name = "chatbotdb"
+# -----------------------------
 
 def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # --- 3. BLOCO ÚNICO DE CONFIGURAÇÕES ---
-    # Coloque TODAS as configurações do app aqui, juntas.
+    # --- CORREÇÃO NA MONTAGEM DA URI ---
+    # Incluímos a variável db_port no local correto
+    DATABASE_URI = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    # -----------------------------------
     
-    # Configurações do Banco de Dados
-    DATABASE_URI = f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -63,7 +63,6 @@ def create_app():
     print(f"Qdrant (Busca Vetorial) pronto: {'Sim' if qdrant_ready else 'Não'}")
     print("---------------------------------")
 
-    # Importa e registra todos os blueprints (rotas)
     from .router.agendamento_routes import bp as agendamento_blueprint
     app.register_blueprint(agendamento_blueprint)
     

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db: # Seu serviço PostgreSQL existente
+    image: postgres:16.2
+    container_name: meu_postgres_compose
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    ports:
+      - "5433:5432"
+    # As variáveis de ambiente foram ADICIONADAS diretamente aqui:
+    environment:
+      POSTGRES_DB: chatbotdb
+      POSTGRES_USER: chatbotuser
+      POSTGRES_PASSWORD: chatbotpass
+
+  qdrant: 
+    image: qdrant/qdrant:latest 
+    container_name: meu_qdrant_compose 
+    ports:
+      - "6333:6333" 
+      - "6334:6334" 
+    volumes:
+      - qdrant_storage_compose:/qdrant/storage
+
+  pgadmin: # Serviço do pgAdmin adicionado
+    image: dpage/pgadmin4:latest
+    container_name: meu_pgadmin_compose
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    ports:
+      - "5050:80"
+    depends_on: # Garante que o pgAdmin inicie apenas depois do banco de dados
+      - db
+
+volumes:
+  postgres-data: {}
+  qdrant_storage_compose: {}
