@@ -1,5 +1,5 @@
 services:
-  db: # Seu serviço PostgreSQL existente
+  db:
     image: postgres:16.2
     volumes:
       - postgres-data:/var/lib/postgresql/data/
@@ -33,7 +33,7 @@ services:
     container_name: react-frontend
     volumes:
       - ./frontend:/usr/src/app
-      - /app/node_modules
+      - /usr/src/app/node_modules
     ports:
       - "5173:5173"
     depends_on:
