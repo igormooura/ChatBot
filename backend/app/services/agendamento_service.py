@@ -1,5 +1,5 @@
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from sqlalchemy import and_, or_
 from .. import db
 from ..models import Doctor, Patient, DoctorAvailability, Appointment
@@ -75,17 +75,22 @@ def confirmar_agendamento_db(email, cpf, agendamentos):
         paciente = Patient(name=nome_paciente, email=email, cpf=cpf)
         db.session.add(paciente)
         db.session.flush()
+
     agendamentos_confirmados = []
     erros = []
+
     for agendamento in agendamentos:
         medico_id = agendamento.get('medico_id')
         horario_str = agendamento.get('horario')
         horario_dt = datetime.strptime(horario_str, "%Y-%m-%d %H:%M")
+        
         disponibilidade = db.session.query(DoctorAvailability).filter_by(doctor_id=medico_id, date=horario_dt).first()
-        agendamento_existente = db.session.query(Appointment).filter_by(doctor_id=medico_id, date=horario_dt).first()
+        agendamento_existente = db.session.query(Appointment).filter_by(date=horario_dt, doctor_id=medico_id).first()
+        
         if not disponibilidade or agendamento_existente:
-            erros.append(f"O horário {horario_str} não está mais disponível.")
+            erros.append(f"O horário {horario_str} para o médico ID {medico_id} não está mais disponível.")
             continue
+        
         novo_agendamento = Appointment(
             doctor_id=medico_id,
             patient_id=paciente.id,
@@ -93,9 +98,52 @@ def confirmar_agendamento_db(email, cpf, agendamentos):
             status='Scheduled'
         )
         db.session.add(novo_agendamento)
+        
+        db.session.delete(disponibilidade)
+        
         agendamentos_confirmados.append(novo_agendamento)
+
     if erros:
         db.session.rollback()
         return None, erros
+        
     db.session.commit()
     return agendamentos_confirmados, None
+
+def encontrar_proximo_dia_disponivel(especialistas, data_base_str, periodo_dia):
+    data_atual = datetime.strptime(data_base_str, "%Y-%m-%d").date()
+    max_dias_busca = 30 
+
+    for i in range(1, max_dias_busca + 1):
+        proxima_data = data_atual + timedelta(days=i)
+        info_pedido = {
+            "especialistas": especialistas,
+            "data_base": proxima_data.strftime("%Y-%m-%d"),
+            "periodo_dia": periodo_dia
+        }
+        horarios = buscar_horarios_disponiveis_db(info_pedido)
+        if horarios:
+            return {
+                "pedido_entendido": info_pedido,
+                "horarios_encontrados": horarios
+            }
+    return None
+
+def encontrar_proximo_dia_disponivel(especialistas, data_base_str, periodo_dia):
+    data_atual = datetime.strptime(data_base_str, "%Y-%m-%d").date()
+    max_dias_busca = 30 
+
+    for i in range(1, max_dias_busca + 1):
+        proxima_data = data_atual + timedelta(days=i)
+        info_pedido = {
+            "especialistas": especialistas,
+            "data_base": proxima_data.strftime("%Y-%m-%d"),
+            "periodo_dia": periodo_dia
+        }
+        horarios = buscar_horarios_disponiveis_db(info_pedido)
+        if horarios:
+            return {
+                "pedido_entendido": info_pedido,
+                "horarios_encontrados": horarios
+            }
+    return None
