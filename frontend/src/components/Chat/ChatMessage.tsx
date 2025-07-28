@@ -2,7 +2,7 @@ import { Bot, User } from "lucide-react";
 
 interface Message {
   sender: "user" | "bot";
-  text?: string; 
+  text?: string;
   timestamp: string;
 }
 
@@ -25,6 +25,21 @@ const ChatMessage = ({ messages }: ChatMessageProps) => {
     return `${hours}:${minutes}`;
   };
 
+  const renderFormattedText = (textWithMarkers: string) => {
+    const parts = textWithMarkers.split('###');
+
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <h4 key={index} className="font-bold text-blue-900 mt-4 mb-2 text-lg">{part.trim()}</h4>;
+      }
+
+      return part.split('\n').map((line, lineIndex) => {
+        if (line.trim() === '') return null;
+        return <p key={`${index}-${lineIndex}`} className="text-black leading-relaxed">{line.trim()}</p>;
+      });
+    });
+  };
+
   return (
     <div className={`flex mb-4 ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -35,32 +50,20 @@ const ChatMessage = ({ messages }: ChatMessageProps) => {
               : "bg-gray-200 text-black rounded-bl-none"
           }`}
       >
-        {isBot && (
-          <div className="mb-1 text-sm font-semibold text-gray-700">
-            Assistente virtual
-          </div>
-        )}
-
-        {isUser && (
-          <div className="mb-1 text-sm font-semibold text-gray-700">
-            Você
-          </div>
-        )}
-
-        <div className="flex items-start">
-          <div
-            className={`flex-shrink-0 mr-3 ${
-              isUser ? "text-indigo-200" : "text-gray-600"
-            }`}
-          >
-            {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
-          </div>
-          <div>{messages.text}</div>
+        <div className="flex items-center mb-2">
+            {isBot && <Bot className="h-5 w-5 mr-3 flex-shrink-0 text-gray-600" />}
+            <div className="text-sm font-semibold text-gray-700">
+              {isBot ? "Assistente virtual" : "Você"}
+            </div>
+        </div>
+        
+        <div className="prose prose-blue max-w-none">
+          {isBot ? renderFormattedText(messages.text) : <p>{messages.text}</p>}
         </div>
 
         <div
-          className={`mt-1 text-xs ${
-            isUser ? "text-black/80 text-right" : "text-gray-600"
+          className={`mt-2 text-xs ${
+            isUser ? "text-black/80 text-right" : "text-gray-600 text-left"
           }`}
         >
           {formatTime(messages.timestamp)}
