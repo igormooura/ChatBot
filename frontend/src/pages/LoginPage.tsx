@@ -67,9 +67,12 @@ const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
   setLoading(true);
   try {
     const { data } = await axios.post("http://127.0.0.1:5000/auth/verify-token", { token: code });
-    localStorage.setItem("jwt_token", data.jwt_token);
+
+    // LINHA CORRIGIDA
+    localStorage.setItem("jwt_token", data.token); // Alterado de data.jwt_token para data.token
+
     alert("Login realizado com sucesso!");
-    navigate("/meu-perfil");
+    navigate("/user");
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       alert(`Erro: ${error.response?.data?.erro || error.message || "Tente novamente."}`);
