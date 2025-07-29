@@ -44,7 +44,7 @@ const handleRequestCode = async (e: MouseEvent<HTMLButtonElement>) => {
     }
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      alert(`Erro: ${error.response?.data?.erro || error.message || "Tente novamente."}`);
+      alert(`Erro: "Tente novamente."`);
     } else if (error instanceof Error) {
       alert(`Erro: ${error.message}`);
     } else {
@@ -69,7 +69,7 @@ const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
     const { data } = await axios.post("http://127.0.0.1:5000/auth/verify-token", { token: code });
     localStorage.setItem("jwt_token", data.jwt_token);
     alert("Login realizado com sucesso!");
-    navigate("/meu-perfil");
+    navigate("/user");
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       alert(`Erro: ${error.response?.data?.erro || error.message || "Tente novamente."}`);

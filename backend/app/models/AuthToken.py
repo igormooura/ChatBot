@@ -9,7 +9,7 @@ class AuthToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(6), unique=True, nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
     
     patient = db.relationship('Patient')
