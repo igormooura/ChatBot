@@ -96,7 +96,7 @@ def verify_login_token(token_str):
         jwt_token = jwt.encode(jwt_payload, secret, algorithm='HS256')
 
         return {
-            "token": jwt_token,
+            "token": jwt_token, # teste
             "email": patient.email
         }, "Autenticação bem-sucedida."
 
