@@ -1,6 +1,5 @@
 from app import create_app, db
-from app.models.Doctor import Doctor
-from app.models.Specialty import Specialty
+from app.models.Doctor import Doctor, Specialty
 from app.models.Patient import Patient
 from app.models.Exam import Exam
 from app.models.DoctorAvailability import DoctorAvailability

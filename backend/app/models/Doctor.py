@@ -11,7 +11,10 @@ class Doctor(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
-    specialty = db.Column(db.String, nullable=False)
+   
+    specialties = db.relationship('Specialty', secondary=doctor_specialties, back_populates='doctors')
+
+
     appointments = relationship('Appointment', back_populates='doctor')
     availabilities = relationship('DoctorAvailability', back_populates='doctor')
 

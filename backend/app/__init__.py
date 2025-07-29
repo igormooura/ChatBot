@@ -76,6 +76,9 @@ def create_app():
     from .router.upload_pdf import bp as upload_blueprint
     app.register_blueprint(upload_blueprint)
     
+    from app.router.consultas_usuarios import consultas_usuarios_bp
+    app.register_blueprint(consultas_usuarios_bp)
+
     @app.route('/health')
     def health_check():
         return "Servidor backend do chatbot está no ar!"
