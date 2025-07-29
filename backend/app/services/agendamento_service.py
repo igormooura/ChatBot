@@ -1,28 +1,27 @@
 
 from datetime import datetime, time, timedelta
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import joinedload
 from .. import db
-from ..models import Doctor, Patient, DoctorAvailability, Appointment, Specialty
+from ..models import Doctor, Patient, DoctorAvailability, Appointment
 
 def buscar_horarios_disponiveis_db(info_pedido):
+    """
+    MODIFICADO: Busca horários disponíveis para uma LISTA de especialidades.
+    """
     especialidades = info_pedido.get("especialistas")
     if not especialidades or not isinstance(especialidades, list):
         return []
 
-    # Busca médicos que tenham qualquer das especialidades informadas
-    doctors = db.session.query(Doctor).join(Doctor.specialties).filter(
-        or_(*[Specialty.name.ilike(f"%{esp.strip()}%") for esp in especialidades])
-    ).options(joinedload(Doctor.specialties)).all()
-
+    query = db.session.query(Doctor).filter(
+        or_(*[Doctor.specialty.ilike(f'%{esp.strip()}%') for esp in especialidades])
+    )
+    
+    doctors = query.all()
     if not doctors:
         return []
 
     doctor_ids = [doctor.id for doctor in doctors]
-
-    avail_query = db.session.query(DoctorAvailability).filter(
-        DoctorAvailability.doctor_id.in_(doctor_ids)
-    )
+    avail_query = db.session.query(DoctorAvailability).filter(DoctorAvailability.doctor_id.in_(doctor_ids))
 
     data_desejada = None
     data_desejada_str = info_pedido.get("data_base")
@@ -38,37 +37,30 @@ def buscar_horarios_disponiveis_db(info_pedido):
         if periodo_dia == "manha":
             inicio = datetime.combine(data_desejada, time(6, 0))
             fim = datetime.combine(data_desejada, time(11, 59, 59))
+            avail_query = avail_query.filter(DoctorAvailability.date.between(inicio, fim))
         elif periodo_dia == "tarde":
             inicio = datetime.combine(data_desejada, time(12, 0))
             fim = datetime.combine(data_desejada, time(17, 59, 59))
+            avail_query = avail_query.filter(DoctorAvailability.date.between(inicio, fim))
         elif periodo_dia == "noite":
             inicio = datetime.combine(data_desejada, time(18, 0))
             fim = datetime.combine(data_desejada, time(23, 59, 59))
-        else:
-            inicio = None
-            fim = None
-
-        if inicio and fim:
             avail_query = avail_query.filter(DoctorAvailability.date.between(inicio, fim))
-
-    availabilities = avail_query.options(joinedload(DoctorAvailability.doctor).joinedload(Doctor.specialties)).all()
+    
+    availabilities = avail_query.all()
     if not availabilities:
         return []
 
-    horarios_ocupados_query = db.session.query(Appointment.date).filter(
-        Appointment.date.in_([av.date for av in availabilities])
-    )
+    horarios_ocupados_query = db.session.query(Appointment.date).filter(Appointment.date.in_([av.date for av in availabilities]))
     horarios_ocupados = [h[0] for h in horarios_ocupados_query.all()]
 
     horarios_disponiveis = []
     for availability in availabilities:
         if availability.date not in horarios_ocupados:
-            doctor = availability.doctor
-            especialidades_nomes = ", ".join([esp.name.capitalize() for esp in doctor.specialties])
             horarios_disponiveis.append({
-                "especialista": especialidades_nomes,
-                "medico_id": doctor.id,
-                "medico_nome": doctor.name,
+                "especialista": availability.doctor.specialty.capitalize(),
+                "medico_id": availability.doctor.id,
+                "medico_nome": availability.doctor.name,
                 "horario": availability.date.strftime("%Y-%m-%d %H:%M")
             })
 

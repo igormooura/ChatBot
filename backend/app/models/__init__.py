@@ -1,7 +1,7 @@
 from .. import db
 
 from .Patient import Patient
-from .Doctor import Doctor, Specialty, doctor_specialties
+from .Doctor import Doctor
 from .DoctorAvailability import DoctorAvailability
 from .Appointment import Appointment
 from .AuthToken import AuthToken
