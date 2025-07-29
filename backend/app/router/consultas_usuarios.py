@@ -32,7 +32,7 @@ def get_todas_consultas():
             "id": consulta.id,
             "data": consulta.date.isoformat(),
             "status": consulta.status,
-            "paciente": consulta.patient.name,
+            "email": consulta.patient.email,
             "cpf_paciente": consulta.patient.cpf,
             "medico": consulta.doctor.name
         }
