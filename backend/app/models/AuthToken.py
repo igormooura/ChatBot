@@ -1,4 +1,3 @@
-# backend/app/models/AuthToken.py
 import secrets
 from datetime import datetime, timedelta, timezone
 from .. import db

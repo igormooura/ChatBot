@@ -5,7 +5,7 @@ class Exam(db.Model):
     __tablename__ = 'exams'
 
     id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String, nullable=False)  # Ex: "Hemograma", "Raio-X", etc.
+    type = db.Column(db.String, nullable=False) 
     description = db.Column(db.String)
 
     scheduled_exams = relationship('ScheduledExam', back_populates='exam')

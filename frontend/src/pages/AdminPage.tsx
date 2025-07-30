@@ -31,7 +31,7 @@ interface ApiResponse {
 }
 
 export const AdminPage = () => {
-  const [items, setItems] = useState<(Consulta | Exam)[]>([]);  // mudar o estado para aceitar ambos
+  const [items, setItems] = useState<(Consulta | Exam)[]>([]);  
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 

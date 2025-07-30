@@ -69,7 +69,7 @@ const handleVerifyCode = async (e: MouseEvent<HTMLButtonElement>) => {
     const { data } = await axios.post("http://127.0.0.1:5000/auth/verify-token", { token: code });
 
     localStorage.setItem("cpf", data.cpf);                // cpf puro que veio do backend
-    localStorage.setItem("jwt_token", data.jwt_token); // Alterado de data.jwt_token para data.token
+    localStorage.setItem("jwt_token", data.jwt_token); 
 
     alert("Login realizado com sucesso!");
     navigate("/user");

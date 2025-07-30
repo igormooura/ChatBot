@@ -12,7 +12,7 @@ consultas_usuarios_bp = Blueprint('consultas_dados', __name__)
 @consultas_usuarios_bp.route('/consultas/<cpf>', methods=['GET', 'OPTIONS'])
 @token_required
 @cross_origin()
-def get_consultas_por_cpf(current_user, cpf):   # <-- agora espera current_user
+def get_consultas_por_cpf(current_user, cpf):  
     paciente = db.session.query(Patient).filter_by(cpf=cpf).first()
     if not paciente:
         return jsonify({"erro": "Paciente não encontrado."}), 404

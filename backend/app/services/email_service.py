@@ -1,5 +1,3 @@
-# backend/app/services/email_service.py
-# -*- coding: utf-8 -*-
 from flask_mail import Message
 from .. import mail
 from flask import current_app, render_template
