@@ -9,7 +9,7 @@ import Background from "../components/Background/Background";
 interface ApiConsulta {
   id: number;
   tipo: "consulta";
-  data: string;
+  data: string; 
   status: string;
   cpf_paciente: string;
   medico: string;
@@ -18,7 +18,7 @@ interface ApiConsulta {
 interface ApiExame {
   id: number;
   tipo: "exame";
-  data: string;
+  data: string; 
   status: string;
   paciente: string;
   cpf_paciente: string;
@@ -30,8 +30,15 @@ interface ApiResponse {
   exames: ApiExame[];
 }
 
+function parseLocalDateTime(dateTimeStr: string): Date {
+  const [datePart, timePart] = dateTimeStr.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
 export const AdminPage = () => {
-  const [items, setItems] = useState<(Consulta | Exam)[]>([]);  
+  const [items, setItems] = useState<(Consulta | Exam)[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,15 +52,14 @@ export const AdminPage = () => {
         const { consultas: consultasApi, exames: examesApi } = response.data;
 
         const dadosConsultas: Consulta[] = consultasApi.map((c) => {
-          const dataIso = c.data.endsWith("Z") ? c.data : c.data + "Z";
-          const dataHora = new Date(dataIso);
+          const dataHora = parseLocalDateTime(c.data);
           return {
             id: c.id,
             tipo: "consulta",
             status: c.status,
             medico: c.medico,
             especialidade: "Consulta Clínica",
-            data: dataHora.toISOString(),
+            data: dataHora.toISOString(), // salva em UTC para backend ou qualquer uso que precise
             horario: dataHora.toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
@@ -62,7 +68,7 @@ export const AdminPage = () => {
         });
 
         const dadosExames: Exam[] = examesApi.map((e) => {
-          const dataHora = new Date(e.data);
+          const dataHora = parseLocalDateTime(e.data);
           return {
             id: e.id,
             tipo: "exame",
@@ -79,7 +85,7 @@ export const AdminPage = () => {
         setItems([...dadosConsultas, ...dadosExames]);
         setError(null);
       } catch (err) {
-        console.log(err);
+        console.error(err);
         setError("Erro ao carregar dados.");
       } finally {
         setLoading(false);
