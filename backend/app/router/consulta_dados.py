@@ -4,21 +4,20 @@ from app.models.Patient import Patient
 from app.models.ScheculedExam import ScheduledExam
 from ..utils.decorators import token_required
 from app import db
+from flask_cors import cross_origin
 
 consultas_usuarios_bp = Blueprint('consultas_dados', __name__)
 
 
-@consultas_usuarios_bp.route('/consultas/<cpf>', methods=['GET'])
+@consultas_usuarios_bp.route('/consultas/<cpf>', methods=['GET', 'OPTIONS'])
 @token_required
-def get_consultas_por_cpf(cpf):
+@cross_origin()
+def get_consultas_por_cpf(current_user, cpf):   # <-- agora espera current_user
     paciente = db.session.query(Patient).filter_by(cpf=cpf).first()
     if not paciente:
         return jsonify({"erro": "Paciente não encontrado."}), 404
 
-    # Consultas médicas
     consultas = db.session.query(Appointment).filter_by(patient_id=paciente.id).all()
-
-    # Exames agendados
     exames = db.session.query(ScheduledExam).filter_by(patient_id=paciente.id).all()
 
     return jsonify({
@@ -45,7 +44,9 @@ def get_consultas_por_cpf(cpf):
     }), 200
 
 
+
 @consultas_usuarios_bp.route('/todas-consultas', methods=['GET'])
+@cross_origin()
 def get_todas_consultas():
     consultas = db.session.query(Appointment).all()
     exames = db.session.query(ScheduledExam).all()
