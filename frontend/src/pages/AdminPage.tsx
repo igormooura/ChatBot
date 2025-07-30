@@ -3,7 +3,7 @@ import axios from "axios";
 import Footer from "../components/Footer/Footer";
 import Header from "../components/Header/Header";
 import ConsultasTable from "../components/Tables/ConsultasTable";
-import type { Consulta } from "../components/Tables/ConsultasTable";
+import type { Consulta, Exam } from "../components/Tables/ConsultasTable";
 import Background from "../components/Background/Background";
 
 interface ApiConsulta {
@@ -31,7 +31,7 @@ interface ApiResponse {
 }
 
 export const AdminPage = () => {
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [items, setItems] = useState<(Consulta | Exam)[]>([]);  // mudar o estado para aceitar ambos
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,10 +49,11 @@ export const AdminPage = () => {
           const dataHora = new Date(dataIso);
           return {
             id: c.id,
+            tipo: "consulta",
+            status: c.status,
             medico: c.medico,
             especialidade: "Consulta Clínica",
-            cpf: `Paciente (CPF: ${c.cpf_paciente})`,
-            data: dataHora.toLocaleDateString("pt-BR"),
+            data: dataHora.toISOString(),
             horario: dataHora.toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
@@ -60,14 +61,14 @@ export const AdminPage = () => {
           };
         });
 
-        const dadosExames: Consulta[] = examesApi.map((e) => {
+        const dadosExames: Exam[] = examesApi.map((e) => {
           const dataHora = new Date(e.data);
           return {
             id: e.id,
-            medico: "Laboratório",
-            especialidade: e.exame,
-            cpf: `Paciente (CPF: ${e.cpf_paciente})`,
-            data: dataHora.toLocaleDateString("pt-BR"),
+            tipo: "exame",
+            status: e.status,
+            exame: e.exame,
+            data: dataHora.toISOString(),
             horario: dataHora.toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
@@ -75,13 +76,11 @@ export const AdminPage = () => {
           };
         });
 
-        setConsultas([...dadosConsultas, ...dadosExames]);
+        setItems([...dadosConsultas, ...dadosExames]);
         setError(null);
       } catch (err) {
-        setError(
-          "Não foi possível carregar os dados. Verifique se o servidor está online."
-        );
-        console.error(err);
+        console.log(err);
+        setError("Erro ao carregar dados.");
       } finally {
         setLoading(false);
       }
@@ -90,27 +89,10 @@ export const AdminPage = () => {
     fetchDados();
   }, []);
 
-  const handleDelete = (id: string | number) => {
+  const handleDelete = (id: number) => {
     if (window.confirm("Tem certeza que deseja deletar este item?")) {
-      setConsultas((prev) => prev.filter((c) => c.id !== id));
+      setItems((prev) => prev.filter((c) => c.id !== id));
     }
-  };
-
-  const renderContent = () => {
-    if (loading) {
-      return <p className="text-center text-gray-600 text-lg">Carregando...</p>;
-    }
-    if (error) {
-      return <p className="text-center text-red-600 text-lg">{error}</p>;
-    }
-    if (consultas.length === 0) {
-      return (
-        <p className="text-center text-gray-600 text-lg">
-          Nenhum agendamento cadastrado no momento.
-        </p>
-      );
-    }
-    return <ConsultasTable consultas={consultas} onDelete={handleDelete} />;
   };
 
   return (
@@ -120,7 +102,17 @@ export const AdminPage = () => {
         <h1 className="text-4xl font-extrabold mb-10 text-center text-blue-900">
           Todos os Agendamentos
         </h1>
-        {renderContent()}
+        {loading && <p className="text-center text-gray-600 text-lg">Carregando...</p>}
+        {error && <p className="text-center text-red-600 text-lg">{error}</p>}
+        {!loading && !error && (
+          <ConsultasTable
+            consultas={items.filter((i): i is Consulta => i.tipo === "consulta")}
+            exames={items.filter((i): i is Exam => i.tipo === "exame")}
+            onDeleteConsulta={handleDelete}
+            onDeleteExame={handleDelete}
+            isAdmin={true}
+          />
+        )}
       </Background>
       <Footer />
     </div>
