@@ -50,12 +50,15 @@ def handle_verify_token():
     if 'token' not in data:
         return jsonify({"erro": "O campo 'token' é obrigatório."}), 400
 
-    # Chama o serviço para verificar o token
     jwt_token, message = verify_login_token(data['token'])
-    
+
     if not jwt_token:
         return jsonify({"erro": message}), 401  # Unauthorized
 
-    return jsonify({"mensagem": message, "jwt_token": jwt_token})
+    return jsonify({
+        "mensagem": message,
+        "jwt_token": jwt_token["token"],
+        "cpf": jwt_token["cpf"]
+    })
 
 
