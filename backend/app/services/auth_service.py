@@ -90,14 +90,16 @@ def verify_login_token(token_str):
         jwt_payload = {
             'exp': datetime.now(timezone.utc) + timedelta(hours=24),
             'iat': datetime.now(timezone.utc),
-            'sub': patient.id
+            'sub': patient.id,
+            'cpf': patient.cpf
         }
 
         jwt_token = jwt.encode(jwt_payload, secret, algorithm='HS256')
 
         return {
             "token": jwt_token, # teste
-            "email": patient.email
+            "email": patient.email,
+            "cpf": patient.cpf
         }, "Autenticação bem-sucedida."
 
     except Exception as e:
