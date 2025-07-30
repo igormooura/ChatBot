@@ -6,7 +6,7 @@ export type Consulta = {
   id: number;
   medico: string;
   especialidade: string;
-  paciente: string;
+  cpf: string;
   data: string;
   horario: string;
 };
@@ -46,7 +46,7 @@ const ConsultasTable: React.FC<ConsultasTableProps> = ({ consultas, onDelete }) 
           </tr>
         </thead>
         <tbody>
-          {consultas.map(({ id, medico, especialidade, paciente, data, horario }) => (
+          {consultas.map(({ id, medico, especialidade, cpf, data, horario }) => (
             <tr
               key={id}
               className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${onDelete ? '' : 'cursor-default'}`}
@@ -55,7 +55,7 @@ const ConsultasTable: React.FC<ConsultasTableProps> = ({ consultas, onDelete }) 
                 <p className="font-semibold text-blue-900">{medico}</p>
                 <p className="text-sm text-blue-600 italic">{especialidade}</p>
               </td>
-              <td className="px-6 py-4 text-gray-700">{paciente}</td>
+              <td className="px-6 py-4 text-gray-700">{cpf}</td>
               <td className="px-6 py-4 text-gray-700">{new Date(data).toLocaleDateString("pt-BR")}</td>
               <td className="px-6 py-4 text-gray-700">{horario}</td>
               {onDelete && (
