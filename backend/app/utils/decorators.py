@@ -1,4 +1,3 @@
-# backend/app/utils/decorators.py
 import jwt
 from functools import wraps
 from flask import request, jsonify, current_app
@@ -7,6 +6,10 @@ from ..models import Patient
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Se for preflight OPTIONS, não barrar
+        if request.method == 'OPTIONS':
+            return jsonify({'message': 'OK'}), 200
+
         token = None
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
@@ -19,10 +22,9 @@ def token_required(f):
             return jsonify({'message': 'Token de autenticação em falta.'}), 401
 
         try:
-            # Descodifica o token usando a mesma chave secreta
             data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
             current_user = Patient.query.get(data['sub'])
-            
+
             if not current_user:
                 return jsonify({'message': 'Utilizador do token não encontrado.'}), 401
 
@@ -31,7 +33,6 @@ def token_required(f):
         except jwt.InvalidTokenError:
             return jsonify({'message': 'Token inválido.'}), 401
 
-        # Passa o utilizador atual para a rota
         return f(current_user, *args, **kwargs)
 
     return decorated

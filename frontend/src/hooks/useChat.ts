@@ -145,7 +145,7 @@ export const useChat = () => {
       }
     } catch (error: any) {
       addBotMessage({ text: error.response?.data?.erro || "Ocorreu um erro." });
-      setChatState("INITIAL");
+      setChatState("INITIAL"); 
     } finally {
       setIsLoading(false);
     }
@@ -194,6 +194,12 @@ export const useChat = () => {
         setIsLoading(false);
     }
   };
+
+  const handleTryAnotherDayForExams = () => {
+    setMessages(prev => prev.map(m => ({ ...m, options: undefined, diasSugeridos: undefined })));
+    addBotMessage({ text: "Claro. Para qual outro dia e período você gostaria de verificar?" });
+    setChatState("AWAITING_EXAM_SELECTION_AND_DATE"); 
+  };
   
   const fetchAndDisplaySuggestion = async (pedidoDataTexto: string) => {
     setMessages(prev => prev.map(m => ({ ...m, options: undefined })));
@@ -212,7 +218,7 @@ export const useChat = () => {
       addBotMessage({ text: error.response?.data?.erro, options: [
         { text: "Ver horários neste dia", onClick: () => switchToManualSelectionFromText(pedidoDataTexto) },
         { text: "Ver dias sugeridos", onClick: () => handleSuggestDays(pedidoDataTexto) },
-        { text: "Tentar outra data", onClick: handleTryAnotherDay }
+        { text: "Tentar outra data", onClick: handleTryAnotherDayForExams } 
       ]});
     }
   };
@@ -223,7 +229,7 @@ export const useChat = () => {
         text: "Sem problemas. O que você prefere?",
         options: [
             { text: "Ver outros horários para este dia", onClick: () => switchToManualSelection(suggestion) },
-            { text: "Escolher outra data", onClick: handleTryAnotherDay }
+            { text: "Escolher outra data", onClick: handleTryAnotherDayForExams } // <--- ALTERADO AQUI
         ]
     });
   };
@@ -328,7 +334,7 @@ export const useChat = () => {
         });
         addBotMessage({ text: "Ou, se preferir:", options: [
           { text: "Listar horários do dia original", onClick: () => switchToManualSelectionFromText(pedidoDataTexto) },
-          { text: "Digitar outra data", onClick: handleTryAnotherDay }
+          { text: "Digitar outra data", onClick: handleTryAnotherDayForExams } // <--- ALTERADO AQUI
         ]});
       } else {
         addBotMessage({ text: "Não encontrei outros dias com horários sequenciais disponíveis." });
@@ -361,6 +367,6 @@ export const useChat = () => {
     messages, isLoading, input, setInput, chatState, selectedSlots,
     handleSendMessage, handleSelectSlot, handleFinalize, handleStartAgendamento, 
     handleStartSugestao, handleFinalizeManualSelection, confirmHeuristicSuggestion, 
-    handleDaySuggestionConfirmation
+    handleDaySuggestionConfirmation, handleTryAnotherDayForExams 
   };
 };

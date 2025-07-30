@@ -1,5 +1,3 @@
-# backend/app/__init__.py
-
 import os
 from dotenv import load_dotenv
 from flask import Flask
@@ -24,7 +22,6 @@ def create_app():
     CORS(app)
 
     # --- 3. BLOCO ÚNICO DE CONFIGURAÇÕES ---
-    # Coloque TODAS as configurações do app aqui, juntas.
     
     # Configurações do Banco de Dados
     DATABASE_URI = f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}"
@@ -43,9 +40,7 @@ def create_app():
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
-    # --- FIM DO BLOCO DE CONFIGURAÇÕES ---
 
-    # 4. Agora que o app está configurado, inicialize as extensões com ele.
     db.init_app(app)
     mail.init_app(app)
 
@@ -76,6 +71,9 @@ def create_app():
     from .router.upload_pdf import bp as upload_blueprint
     app.register_blueprint(upload_blueprint)
     
+    from app.router.consulta_dados import consultas_usuarios_bp
+    app.register_blueprint(consultas_usuarios_bp)
+
     @app.route('/health')
     def health_check():
         return "Servidor backend do chatbot está no ar!"

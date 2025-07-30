@@ -12,7 +12,6 @@ EMBEDDING_MODEL_NAME = os.getenv('EMBEDDING_MODEL_NAME', 'paraphrase-multilingua
 VECTOR_SIZE = int(os.getenv('VECTOR_SIZE', 384))
 DISTANCE_METRIC = models.Distance.COSINE
 
-# Copie EXATAMENTE o mesmo dicionário ESPECIALISTAS_SINTOMAS do seu script do chatbot aqui
 ESPECIALISTAS_SINTOMAS = {
     "Cardiologista": ["coração", "peito", "dor no peito", "palpitação", "pressão alta", "falta de ar", "infarto", "angina", "taquicardia", "arritmia"],
     "Dermatologista": ["pele", "mancha", "coceira", "acne", "espinha", "cabelo", "queda de cabelo", "unha", "alergia de pele", "micose", "verruga", "psoríase", "dermatite"],

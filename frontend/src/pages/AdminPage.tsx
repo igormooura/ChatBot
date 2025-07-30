@@ -1,23 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import Footer from "../components/Footer/Footer";
 import Header from "../components/Header/Header";
 import ConsultasTable from "../components/Tables/ConsultasTable";
-import type { Consulta } from "../components/Tables/ConsultasTable";
+import type { Consulta, Exam } from "../components/Tables/ConsultasTable";
 import Background from "../components/Background/Background";
 
-const consultasIniciais: Consulta[] = [
-  { id: 1, medico: "Dr. João Silva", especialidade: "Cardiologia", paciente: "Igor Moura", data: "2025-07-05", horario: "10:00" },
-  { id: 2, medico: "Dra. Maria Souza", especialidade: "Dermatologia", paciente: "Ana Paula", data: "2025-07-06", horario: "11:30" },
-  { id: 3, medico: "Dr. Carlos Pereira", especialidade: "Ortopedia", paciente: "Lucas Silva", data: "2025-07-10", horario: "14:00" },
-  { id: 4, medico: "Dra. Fernanda Lima", especialidade: "Neurologia", paciente: "Mariana Santos", data: "2025-07-15", horario: "09:00" },
-];
+interface ApiConsulta {
+  id: number;
+  tipo: "consulta";
+  data: string; 
+  status: string;
+  cpf_paciente: string;
+  medico: string;
+}
+
+interface ApiExame {
+  id: number;
+  tipo: "exame";
+  data: string; 
+  status: string;
+  paciente: string;
+  cpf_paciente: string;
+  exame: string;
+}
+
+interface ApiResponse {
+  consultas: ApiConsulta[];
+  exames: ApiExame[];
+}
+
+function parseLocalDateTime(dateTimeStr: string): Date {
+  const [datePart, timePart] = dateTimeStr.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
 
 export const AdminPage = () => {
-  const [consultas, setConsultas] = useState<Consulta[]>(consultasIniciais);
+  const [items, setItems] = useState<(Consulta | Exam)[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDados = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get<ApiResponse>(
+          "http://127.0.0.1:5000/todas-consultas"
+        );
+        const { consultas: consultasApi, exames: examesApi } = response.data;
+
+        const dadosConsultas: Consulta[] = consultasApi.map((c) => {
+          const dataHora = parseLocalDateTime(c.data);
+          return {
+            id: c.id,
+            tipo: "consulta",
+            status: c.status,
+            medico: c.medico,
+            especialidade: "Consulta Clínica",
+            data: dataHora.toISOString(), // salva em UTC para backend ou qualquer uso que precise
+            horario: dataHora.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          };
+        });
+
+        const dadosExames: Exam[] = examesApi.map((e) => {
+          const dataHora = parseLocalDateTime(e.data);
+          return {
+            id: e.id,
+            tipo: "exame",
+            status: e.status,
+            exame: e.exame,
+            data: dataHora.toISOString(),
+            horario: dataHora.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          };
+        });
+
+        setItems([...dadosConsultas, ...dadosExames]);
+        setError(null);
+      } catch (err) {
+        console.error(err);
+        setError("Erro ao carregar dados.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDados();
+  }, []);
 
   const handleDelete = (id: number) => {
-    if (window.confirm("Tem certeza que deseja deletar esta consulta?")) {
-      setConsultas((prev) => prev.filter((c) => c.id !== id));
+    if (window.confirm("Tem certeza que deseja deletar este item?")) {
+      setItems((prev) => prev.filter((c) => c.id !== id));
     }
   };
 
@@ -25,11 +105,19 @@ export const AdminPage = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <Background>
-        <h1 className="text-4xl font-extrabold mb-10 text-center text-blue-900">Todas as Consultas Marcadas</h1>
-        {consultas.length === 0 ? (
-          <p className="text-center text-gray-600 text-lg">Nenhuma consulta cadastrada no momento.</p>
-        ) : (
-          <ConsultasTable consultas={consultas} onDelete={handleDelete} />
+        <h1 className="text-4xl font-extrabold mb-10 text-center text-blue-900">
+          Todos os Agendamentos
+        </h1>
+        {loading && <p className="text-center text-gray-600 text-lg">Carregando...</p>}
+        {error && <p className="text-center text-red-600 text-lg">{error}</p>}
+        {!loading && !error && (
+          <ConsultasTable
+            consultas={items.filter((i): i is Consulta => i.tipo === "consulta")}
+            exames={items.filter((i): i is Exam => i.tipo === "exame")}
+            onDeleteConsulta={handleDelete}
+            onDeleteExame={handleDelete}
+            isAdmin={true}
+          />
         )}
       </Background>
       <Footer />
