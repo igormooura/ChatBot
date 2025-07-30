@@ -2,12 +2,14 @@ from flask import Blueprint, jsonify
 from app.models.Appointment import Appointment
 from app.models.Patient import Patient
 from app.models.ScheculedExam import ScheduledExam
+from ..utils.decorators import token_required
 from app import db
 
 consultas_usuarios_bp = Blueprint('consultas_dados', __name__)
 
 
 @consultas_usuarios_bp.route('/consultas/<cpf>', methods=['GET'])
+@token_required
 def get_consultas_por_cpf(cpf):
     paciente = db.session.query(Patient).filter_by(cpf=cpf).first()
     if not paciente:
@@ -55,8 +57,7 @@ def get_todas_consultas():
                 "tipo": "consulta",
                 "data": consulta.date.isoformat(),
                 "status": consulta.status,
-                "paciente": consulta.patient.name,
-                "cpf_paciente": consulta.patient.cpf,
+                "cpf": consulta.patient.cpf,
                 "medico": consulta.doctor.name
             }
             for consulta in consultas
@@ -67,8 +68,7 @@ def get_todas_consultas():
                 "tipo": "exame",
                 "data": exame.date.isoformat(),
                 "status": exame.status,
-                "paciente": exame.patient.name,
-                "cpf_paciente": exame.patient.cpf,
+                "cpf": exame.patient.cpf,
                 "exame": exame.exam.type
             }
             for exame in exames
