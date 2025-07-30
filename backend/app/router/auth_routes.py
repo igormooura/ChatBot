@@ -58,17 +58,4 @@ def handle_verify_token():
 
     return jsonify({"mensagem": message, "jwt_token": jwt_token})
 
-@bp.route('/meu-perfil', methods=['GET'])
-@cross_origin()
-@token_required
-def get_my_profile(current_user):
-    if not current_user:
-        return jsonify({"erro": "Utilizador não encontrado."}), 404
-
-    return jsonify({
-        "id": current_user.id,
-        "name": current_user.name,
-        "email": current_user.email,
-        "cpf": current_user.cpf
-    })
 
