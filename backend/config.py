@@ -13,7 +13,7 @@ print("--- Iniciando Configuração do Projeto ---")
 load_dotenv()
 
 # --- Configurações de IA ---
-QDRANT_HOST = "localhost"
+QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
 QDRANT_HTTP_PORT = 6333
 QDRANT_GRPC_PORT = 6334
 COLLECTION_NAME = "especialidades_medicas"
