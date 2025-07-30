@@ -1,0 +1,76 @@
+from flask import Blueprint, jsonify
+from app.models.Appointment import Appointment
+from app.models.Patient import Patient
+from app.models.ScheculedExam import ScheduledExam
+from app import db
+
+consultas_usuarios_bp = Blueprint('consultas_dados', __name__)
+
+
+@consultas_usuarios_bp.route('/consultas/<cpf>', methods=['GET'])
+def get_consultas_por_cpf(cpf):
+    paciente = db.session.query(Patient).filter_by(cpf=cpf).first()
+    if not paciente:
+        return jsonify({"erro": "Paciente não encontrado."}), 404
+
+    # Consultas médicas
+    consultas = db.session.query(Appointment).filter_by(patient_id=paciente.id).all()
+
+    # Exames agendados
+    exames = db.session.query(ScheduledExam).filter_by(patient_id=paciente.id).all()
+
+    return jsonify({
+        "consultas": [
+            {
+                "id": consulta.id,
+                "tipo": "consulta",
+                "data": consulta.date.isoformat(),
+                "status": consulta.status,
+                "medico": consulta.doctor.name
+            }
+            for consulta in consultas
+        ],
+        "exames": [
+            {
+                "id": exame.id,
+                "tipo": "exame",
+                "data": exame.date.isoformat(),
+                "status": exame.status,
+                "exame": exame.exam.type
+            }
+            for exame in exames
+        ]
+    }), 200
+
+
+@consultas_usuarios_bp.route('/todas-consultas', methods=['GET'])
+def get_todas_consultas():
+    consultas = db.session.query(Appointment).all()
+    exames = db.session.query(ScheduledExam).all()
+
+    return jsonify({
+        "consultas": [
+            {
+                "id": consulta.id,
+                "tipo": "consulta",
+                "data": consulta.date.isoformat(),
+                "status": consulta.status,
+                "paciente": consulta.patient.name,
+                "cpf_paciente": consulta.patient.cpf,
+                "medico": consulta.doctor.name
+            }
+            for consulta in consultas
+        ],
+        "exames": [
+            {
+                "id": exame.id,
+                "tipo": "exame",
+                "data": exame.date.isoformat(),
+                "status": exame.status,
+                "paciente": exame.patient.name,
+                "cpf_paciente": exame.patient.cpf,
+                "exame": exame.exam.type
+            }
+            for exame in exames
+        ]
+    }), 200
